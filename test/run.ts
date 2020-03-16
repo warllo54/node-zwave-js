@@ -1,5 +1,5 @@
 // import { ThermostatMode } from "../build/lib/commandclass/ThermostatModeCC";
-import { Driver } from "../";
+import { Driver } from "../src";
 
 // @ts-ignore
 const driver = new Driver("COM4").once("driver ready", async () => {
