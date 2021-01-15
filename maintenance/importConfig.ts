@@ -34,7 +34,7 @@ const program = yargs
 		description: "source of the import",
 		alias: "s",
 		type: "array",
-		choices: ["oh", "ozw"], // oh: openhab, ozw: openzwave
+		choices: ["oh", "ozw", "zwa"], // oh: openhab, ozw: openzwave; zwa: zWave Alliance
 		default: ["oh"],
 	})
 	.option("ids", {
@@ -97,6 +97,9 @@ const ozwTarName = "openzwave.tar.gz";
 const ozwTarUrl =
 	"https://github.com/OpenZWave/open-zwave/archive/master.tar.gz";
 const ozwConfigFolder = path.join(ozwTempDir, "./config");
+
+const zwaTempDir = path.join(__dirname, "../.tmpzwa");
+const zwaConfigFolder = path.join(zwaTempDir, "./config");
 
 const ohTempDir = path.join(__dirname, "../.tmpoh");
 const importedManufacturersPath = path.join(ohTempDir, "manufacturers.json");
@@ -710,6 +713,389 @@ async function parseOZWProduct(
 	);
 }
 
+/** Parse a directory of zWave Alliance device xmls */
+async function parseZWAFiles(): Promise<void> {
+	/*
+	// The manufacturer_specific.xml is OZW's index file and contains all devices, their type, ID and name (label)
+	const manufacturerFile = path.join(
+		ozwConfigFolder,
+		"manufacturer_specific.xml",
+	);
+	const manufacturerJson: Record<string, any> = xml2json.toJson(
+		await fs.readFile(manufacturerFile, "utf8"),
+		{
+			object: true,
+		},
+	); */
+
+	// TODO: Parse xml files in directory
+	const jsonXMLdata: { [name: string]: any } = {};
+
+	const configFiles = await enumFilesRecursive(zwaConfigFolder, (file) =>
+		file.endsWith(".xml"),
+	);
+
+	for (const file of configFiles) {
+		const json = xml2json.toJson(file, {
+			object: true,
+			coerce: true, // coerce types
+		});
+
+		jsonXMLdata.push(json);
+	}
+
+	// TODO: Test for missing product xmls and discard
+
+	// TODO: For remaining files, build an index
+
+	// Load our existing config files to cross-reference
+	await configManager.loadManufacturers();
+	if (program.devices) {
+		await configManager.loadDeviceIndex();
+	}
+	/*
+	for (const man of manufacturerJson.ManufacturerSpecificData.Manufacturer) {
+		// <Manufacturer id="012A" name="ManufacturerName">... products ...</Manufacturer>
+		const manufacturerId = parseInt(man.id, 16);
+		let manufacturerName = configManager.lookupManufacturer(manufacturerId);
+
+		// Add the manufacturer to our manufacturers.json if it is missing
+		if (manufacturerName === undefined && man.name !== undefined) {
+			console.log(`Adding missing manufacturer: ${man.name}`);
+			// let this here, if program.manufacturers is false it will not
+			// write the manufacturers to file
+			configManager.setManufacturer(manufacturerId, man.name);
+		}
+		manufacturerName = man.name;
+
+		if (program.devices) {
+			// Import all device config files of this manufacturer if requested
+			const products = ensureArray(man.Product);
+			for (const product of products) {
+				if (product.config !== undefined) {
+					if (
+						!program.ids ||
+						matchId(man.id, product.id, product.type)
+					) {
+						await parseZWAProduct(
+							product,
+							manufacturerId,
+							manufacturerName,
+						);
+					}
+				}
+			}
+		}
+	}
+
+	if (program.manufacturers) {
+		await configManager.saveManufacturers();
+	}
+	*/
+}
+
+/**
+ * Read and parse the product xml, add it to index if missing,
+ * create/update device json config and validate the newly added
+ * device
+ *
+ * @param product the parsed product json entry from manufacturer.xml
+ */
+async function parseZWAProduct(
+	product: any,
+	manufacturerId: number,
+	manufacturer: string | undefined,
+): Promise<void> {
+	const productFile = await fs.readFile(
+		path.join(zwaConfigFolder, product.config),
+		"utf8",
+	);
+
+	// TODO: Parse the label from XML metadata, e.g.
+	// <MetaDataItem id="0100" name="Identifier" type="2002">CT32 </MetaDataItem>
+	const productLabel = path
+		.basename(product.config, ".xml")
+		.toLocaleUpperCase();
+
+	// any products descriptions have productName in it, remove it
+	const productName = product.name.replace(productLabel, "");
+
+	// for some reasons some products already have the prefix `0x`, remove it
+	product.id = product.id.replace(/^0x/, "");
+	product.type = product.type.replace(/^0x/, "");
+
+	// Format the device IDs like we expect them
+	const productId = formatId(product.id);
+	const productType = formatId(product.type);
+	const manufacturerIdHex = formatId(manufacturerId);
+
+	const deviceConfigs =
+		configManager
+			.getIndex()
+			?.filter(
+				(f: DeviceConfigIndexEntry) =>
+					f.manufacturerId === manufacturerIdHex &&
+					f.productType === productType &&
+					f.productId === productId,
+			) ?? [];
+	const latestConfig = getLatestConfigVersion(deviceConfigs);
+
+	// Determine where the config file should be
+	const fileNameRelative =
+		latestConfig?.filename ??
+		`${manufacturerIdHex}/${labelToFilename(productLabel)}.json`;
+	const fileNameAbsolute = path.join(processedDir, fileNameRelative);
+
+	// Load the existing config so we can merge it with the updated information
+	let existingDevice: Record<string, any> | undefined;
+
+	if (await fs.pathExists(fileNameAbsolute)) {
+		existingDevice = JSON5.parse(
+			await fs.readFile(fileNameAbsolute, "utf8"),
+		);
+	}
+
+	// Parse the ZWA xml file
+	const json = xml2json.toJson(productFile, {
+		object: true,
+		coerce: true, // coerce types
+	}).Product as Record<string, any>;
+
+	// const metadata = ensureArray(json.MetaData?.MetaDataItem);
+	// const name = metadata.find((m: any) => m.name === "Name")?.$t;
+	// const description = metadata.find((m: any) => m.name === "Description")?.$t;
+
+	const devices = existingDevice?.devices ?? [];
+
+	if (
+		!devices.some(
+			(d: { productType: string; productId: string }) =>
+				d.productType === productType && d.productId === productId,
+		)
+	) {
+		devices.push({ productType, productId });
+	}
+
+	const newConfig: Record<string, any> = {
+		manufacturer,
+		manufacturerId: manufacturerIdHex,
+		label: productLabel,
+		description: existingDevice?.description ?? productName, // don't override the descrition
+		devices: devices,
+		firmwareVersion: {
+			min: existingDevice?.firmwareVersion.min ?? "0.0",
+			max: existingDevice?.firmwareVersion.max ?? "255.255",
+		},
+		associations: existingDevice?.associations ?? {},
+		paramInformation: existingDevice?.paramInformation ?? {},
+		compat: existingDevice?.compat,
+	};
+
+	// Merge the devices array with a potentially existing one
+	if (existingDevice) {
+		for (const device of existingDevice.devices) {
+			if (
+				!newConfig.devices.some(
+					(d: any) =>
+						d.productType === device.productType &&
+						d.productId === device.productId,
+				)
+			) {
+				newConfig.devices.push(device);
+			}
+		}
+	}
+
+	const commandClasses = ensureArray(json.CommandClass);
+
+	// parse config params: <CommandClass id="112"> ...values... </CommandClass>
+	const parameters = ensureArray(
+		commandClasses.find((c: any) => c.id === CommandClasses.Configuration)
+			?.Value,
+	);
+	for (const param of parameters) {
+		if (isNaN(param.index)) continue;
+
+		const isBitSet = param.type === "bitset";
+
+		if (isBitSet) {
+			// BitSets are split into multiple partial parameters
+			const bitSetIds = ensureArray(param.BitSet);
+			const defaultValue =
+				typeof param.value === "number" ? param.value : 0;
+			const valueSize = param.size || 1;
+
+			// Partial params share the first part of the label
+			param.label = ensureArray(param.label)[0];
+			const paramLabel = param.label ? `${param.label}. ` : "";
+
+			for (const bitSet of bitSetIds) {
+				// OZW has 1-based bit indizes, we are 0-based
+				const bit = (bitSet.id || 1) - 1;
+				const mask = 2 ** bit;
+				const id = `${param.index}[${num2hex(mask)}]`;
+
+				// Parse the label for this bit
+				const label = ensureArray(bitSet.Label)[0] ?? "";
+				const desc = ensureArray(bitSet.Help)[0] ?? "";
+
+				const parsedParam = newConfig.paramInformation[id] ?? {};
+
+				parsedParam.label = `${paramLabel}${label}`;
+				parsedParam.description = desc;
+				parsedParam.valueSize = valueSize; // The partial param must have the same value size as the original param
+				// OZW only supports single-bit "partial" params, so we only have 0 and 1 as possible values
+				parsedParam.minValue = 0;
+				parsedParam.maxValue = 1;
+				parsedParam.defaultValue = !!(defaultValue & mask) ? 1 : 0;
+				parsedParam.readOnly = false;
+				parsedParam.writeOnly = false;
+				parsedParam.allowManualEntry = true;
+
+				newConfig.paramInformation[id] = parsedParam;
+			}
+		} else {
+			const parsedParam = newConfig.paramInformation[param.index] ?? {};
+
+			// By default, update existing properties with new descriptions
+			// OZW's config fields could be empty strings, so we need to use || instead of ??
+			parsedParam.label =
+				ensureArray(param.label)[0] || parsedParam.label;
+			parsedParam.description =
+				ensureArray(param.Help)[0] || parsedParam.description;
+			parsedParam.valueSize = updateNumberOrDefault(
+				param.size,
+				parsedParam.valueSize,
+				1,
+			);
+			parsedParam.minValue = updateNumberOrDefault(
+				param.min,
+				parsedParam.min,
+				0,
+			);
+			try {
+				parsedParam.maxValue = updateNumberOrDefault(
+					param.max,
+					parsedParam.max,
+					getIntegerLimits(parsedParam.valueSize, false).max, // choose the biggest possible number if no max is given
+				);
+			} catch {
+				// some config params have absurd value sizes, ignore them
+				parsedParam.maxValue = parsedParam.minValue;
+			}
+			parsedParam.readOnly =
+				param.read_only === true || param.read_only === "true";
+			parsedParam.writeOnly =
+				param.write_only === true || param.write_only === "true";
+			parsedParam.allowManualEntry = param.type !== "list";
+			parsedParam.defaultValue = updateNumberOrDefault(
+				param.value,
+				parsedParam.value,
+				parsedParam.minValue, // choose the smallest possible number if no default is given
+			);
+			parsedParam.unsigned = true; // ozw values are all unsigned
+
+			if (param.units) {
+				parsedParam.unit = param.units;
+			}
+
+			// could have multiple translations, if so it's an array, the first is the english one
+			if (isArray(parsedParam.description)) {
+				parsedParam.description = parsedParam.description[0];
+			}
+
+			if (typeof parsedParam.description !== "string") {
+				parsedParam.description = "";
+			}
+
+			const items = ensureArray(param.Item);
+
+			// Parse options list
+			// <Item label="Option 1" value="1"/>
+			// <Item label="Option 2" value="2"/>
+			if (param.type === "list" && items.length > 0) {
+				parsedParam.options = [];
+				for (const item of items) {
+					if (
+						!parsedParam.options.find(
+							(v: any) => v.value === item.value,
+						)
+					) {
+						const opt = {
+							label: item.label.toString(),
+							value: parseInt(item.value),
+						};
+						parsedParam.options.push(opt);
+					}
+				}
+			}
+
+			newConfig.paramInformation[param.index] = parsedParam;
+		}
+	}
+
+	// parse associations contained in command class 133 and 142
+	const associations = [
+		...ensureArray(
+			commandClasses.find((c: any) => c.id === CommandClasses.Association)
+				?.Associations?.Group,
+		),
+		...ensureArray(
+			commandClasses.find(
+				(c: any) =>
+					c.id === CommandClasses["Multi Channel Association"],
+			)?.Associations?.Group,
+		),
+	];
+
+	if (associations.length > 0) {
+		newConfig.associations ??= {};
+		for (const ass of associations) {
+			const parsedAssociation = newConfig.associations[ass.index] ?? {};
+
+			parsedAssociation.label = ass.label;
+			parsedAssociation.maxNodes = ass.max_associations;
+			// Only set the isLifeline key if its true
+			const isLifeline =
+				/lifeline/i.test(ass.label) ||
+				ass.auto === "true" ||
+				ass.auto === true;
+			if (isLifeline) parsedAssociation.isLifeline = true;
+
+			newConfig.associations[ass.index] = parsedAssociation;
+		}
+	}
+
+	// Some devices report other CCs than they support, add this information to the compat field
+	const toAdd = commandClasses
+		.filter((c) => c.action === "add")
+		.map((c) => c.id);
+	const toRemove = commandClasses
+		.filter((c) => c.action === "remove")
+		.map((c) => c.id);
+
+	if (toAdd.length > 0 || toRemove.length > 0) {
+		newConfig.compat ??= {};
+		newConfig.compat.cc ??= {};
+
+		if (toAdd.length > 0) {
+			newConfig.compat.cc.add = toAdd;
+		}
+		if (toRemove.length > 0) {
+			newConfig.compat.cc.remove = toRemove;
+		}
+	}
+	// create the target dir for this config file if doesn't exists
+	const manufacturerDir = path.join(processedDir, manufacturerIdHex);
+	await fs.ensureDir(manufacturerDir);
+
+	// write the updated configuration file
+	await fs.writeFile(
+		fileNameAbsolute,
+		stringify(normalizeConfig(newConfig), "\t"),
+	);
+}
+
 /**
  * Downloads all device information
  * @param IDs If given, only these IDs are downloaded
@@ -1035,6 +1421,16 @@ void (async () => {
 
 			if (program.manufacturers || program.devices)
 				await parseOZWConfig();
+		}
+
+		if (program.source.includes("zwa")) {
+			/* TODO: Add routine to download only the most recent, or specific, zwave alliance files
+			if (program.download) {
+				await downloadOZWConfig();
+				await extractConfigFromTar();
+			} */
+
+			if (program.manufacturers || program.devices) await parseZWAFiles();
 		}
 
 		if (program.source.includes("oh")) {
