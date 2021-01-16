@@ -750,6 +750,12 @@ async function parseZWAFiles(): Promise<void> {
 
 	for (const file of jsonData) {
 		const manufacturerId = parseInt(file.ManufacturerId, 16);
+		if (isNaN(manufacturerId)) {
+			console.log(
+				`Error: manufacturerId failed to convert to a number: ${file.Id}.json`,
+			);
+		}
+
 		let manufacturerName = configManager.lookupManufacturer(manufacturerId);
 
 		// Add the manufacturer to our manufacturers.json if it is missing
@@ -785,10 +791,7 @@ async function parseZWAProduct(
 	manufacturerId: number,
 	manufacturer: string | undefined,
 ): Promise<void> {
-	const productFile = await fs.readFile(
-		path.join(zwaConfigFolder, product.config),
-		"utf8",
-	);
+	const productFile = product;
 
 	console.log(product);
 	console.log(manufacturerId);
