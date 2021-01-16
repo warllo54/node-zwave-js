@@ -136,22 +136,15 @@ export class ConfigManager {
 	public setManufacturer(
 		manufacturerId: number,
 		manufacturerName: string,
-	): boolean {
+	): void {
 		if (!this.manufacturers) {
 			throw new ZWaveError(
 				"The config has not been loaded yet!",
 				ZWaveErrorCodes.Driver_NotReady,
 			);
-		} else if (!manufacturerId) {
-			// If undefined, log the error to console as this function is only called from within importConfig.ts
-			console.log(
-				`manufacturerID for ${manufacturerName} is undefined -- skipping`,
-			);
-			return false;
 		}
 
 		this.manufacturers.set(manufacturerId, manufacturerName);
-		return true;
 	}
 
 	public async loadIndicators(): Promise<void> {
