@@ -35,7 +35,7 @@ const program = yargs
 		alias: "s",
 		type: "array",
 		choices: ["oh", "ozw", "zwa"], // oh: openhab, ozw: openzwave; zwa: zWave Alliance
-		default: ["oh"],
+		default: ["zwa"],
 	})
 	.option("ids", {
 		description:
@@ -729,22 +729,16 @@ async function parseZWAFiles(): Promise<void> {
 	); */
 
 	// TODO: Parse xml files in directory
-	const jsonXMLdata: { [name: string]: any } = {};
+	const jsonData = [];
 
-	const configFiles = await enumFilesRecursive(zwaConfigFolder, (file) =>
-		file.endsWith(".xml"),
+	const configFiles = await enumFilesRecursive(zwaTempDir, (file) =>
+		file.endsWith(".json"),
 	);
 
 	for (const file of configFiles) {
-		const json = xml2json.toJson(file, {
-			object: true,
-			coerce: true, // coerce types
-		});
-
-		jsonXMLdata.push(json);
+		const j = await fs.readFile(file, "utf8");
+		jsonData.push(JSON.parse(j));
 	}
-
-	// TODO: Test for missing product xmls and discard
 
 	// TODO: For remaining files, build an index
 
@@ -753,37 +747,23 @@ async function parseZWAFiles(): Promise<void> {
 	if (program.devices) {
 		await configManager.loadDeviceIndex();
 	}
-	/*
-	for (const man of manufacturerJson.ManufacturerSpecificData.Manufacturer) {
-		// <Manufacturer id="012A" name="ManufacturerName">... products ...</Manufacturer>
-		const manufacturerId = parseInt(man.id, 16);
+
+	for (const file of jsonData) {
+		const manufacturerId = parseInt(file.ManufacturerId, 16);
 		let manufacturerName = configManager.lookupManufacturer(manufacturerId);
 
 		// Add the manufacturer to our manufacturers.json if it is missing
-		if (manufacturerName === undefined && man.name !== undefined) {
-			console.log(`Adding missing manufacturer: ${man.name}`);
+		if (manufacturerName === undefined && file.Brand !== undefined) {
+			console.log(`Adding missing manufacturer: ${file.Brand}`);
 			// let this here, if program.manufacturers is false it will not
 			// write the manufacturers to file
-			configManager.setManufacturer(manufacturerId, man.name);
+			configManager.setManufacturer(manufacturerId, file.Brand);
 		}
-		manufacturerName = man.name;
 
 		if (program.devices) {
 			// Import all device config files of this manufacturer if requested
-			const products = ensureArray(man.Product);
-			for (const product of products) {
-				if (product.config !== undefined) {
-					if (
-						!program.ids ||
-						matchId(man.id, product.id, product.type)
-					) {
-						await parseZWAProduct(
-							product,
-							manufacturerId,
-							manufacturerName,
-						);
-					}
-				}
+			if (matchId(manufacturerId, file.ProductId, file.ProductTypeId)) {
+				await parseZWAProduct(file, manufacturerId, manufacturerName);
 			}
 		}
 	}
@@ -791,7 +771,6 @@ async function parseZWAFiles(): Promise<void> {
 	if (program.manufacturers) {
 		await configManager.saveManufacturers();
 	}
-	*/
 }
 
 /**
@@ -811,6 +790,11 @@ async function parseZWAProduct(
 		"utf8",
 	);
 
+	console.log(product);
+	console.log(manufacturerId);
+	console.log(manufacturer);
+
+	/*
 	// TODO: Parse the label from XML metadata, e.g.
 	// <MetaDataItem id="0100" name="Identifier" type="2002">CT32 </MetaDataItem>
 	const productLabel = path
@@ -1093,7 +1077,7 @@ async function parseZWAProduct(
 	await fs.writeFile(
 		fileNameAbsolute,
 		stringify(normalizeConfig(newConfig), "\t"),
-	);
+	); */
 }
 
 /**
