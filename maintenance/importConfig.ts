@@ -715,20 +715,20 @@ async function parseOZWProduct(
 
 /** Parse a directory of zWave Alliance device xmls */
 async function parseZWAFiles(): Promise<void> {
-	/*
-	// The manufacturer_specific.xml is OZW's index file and contains all devices, their type, ID and name (label)
-	const manufacturerFile = path.join(
-		ozwConfigFolder,
-		"manufacturer_specific.xml",
-	);
-	const manufacturerJson: Record<string, any> = xml2json.toJson(
-		await fs.readFile(manufacturerFile, "utf8"),
-		{
-			object: true,
-		},
-	); */
+	/* const jsonData = [];
 
-	// TODO: Parse xml files in directory
+	const configFiles = await enumFilesRecursive(zwaTempDir, (file) =>
+		file.endsWith(".xml"),
+	);
+
+	for (const file of configFiles) {
+		const j = xml2json.toJson(await fs.readFileSync(file, "utf8"), {
+			object: true,
+		});
+		jsonData.push(j);
+	} */
+
+	// Parse json files in the zwaTempDir
 	const jsonData = [];
 
 	const configFiles = await enumFilesRecursive(zwaTempDir, (file) =>
@@ -737,10 +737,16 @@ async function parseZWAFiles(): Promise<void> {
 
 	for (const file of configFiles) {
 		const j = await fs.readFile(file, "utf8");
-		jsonData.push(JSON.parse(j));
-	}
 
-	// TODO: For remaining files, build an index
+		/* zWave Alliance numbering isn't always continuous and an html page is returned when a device number doesn't 
+		   Test for and delete such html files. */
+		if (j.charAt(0) === "{") {
+			jsonData.push(JSON.parse(j));
+		} else {
+			void fs.unlink(file);
+			console.log(`Removing missing product file: ${file.Id}.json`);
+		}
+	}
 
 	// Load our existing config files to cross-reference
 	await configManager.loadManufacturers();
@@ -750,13 +756,18 @@ async function parseZWAFiles(): Promise<void> {
 
 	for (const file of jsonData) {
 		const manufacturerId = parseInt(file.ManufacturerId, 16);
+
+		// Rarely, zWave Alliance files lack a ManufacturerId, which breaks writing manufacturers.json, so check for that
 		if (isNaN(manufacturerId)) {
 			console.log(
-				`Error: manufacturerId failed to convert to a number: ${file.Id}.json`,
+				`Error: manufacturerId failed to convert to a number: ${file.Id}.json -- ${file.Brand} -- ${manufacturerId}`,
 			);
+			continue;
 		}
 
-		let manufacturerName = configManager.lookupManufacturer(manufacturerId);
+		const manufacturerName = configManager.lookupManufacturer(
+			manufacturerId,
+		);
 
 		// Add the manufacturer to our manufacturers.json if it is missing
 		if (manufacturerName === undefined && file.Brand !== undefined) {
@@ -767,10 +778,7 @@ async function parseZWAFiles(): Promise<void> {
 		}
 
 		if (program.devices) {
-			// Import all device config files of this manufacturer if requested
-			if (matchId(manufacturerId, file.ProductId, file.ProductTypeId)) {
-				await parseZWAProduct(file, manufacturerId, manufacturerName);
-			}
+			await parseZWAProduct(file, manufacturerId, manufacturerName);
 		}
 	}
 
@@ -792,30 +800,20 @@ async function parseZWAProduct(
 	manufacturer: string | undefined,
 ): Promise<void> {
 	const productFile = product;
-
-	console.log(product);
-	console.log(manufacturerId);
-	console.log(manufacturer);
-
-	/*
-	// TODO: Parse the label from XML metadata, e.g.
-	// <MetaDataItem id="0100" name="Identifier" type="2002">CT32 </MetaDataItem>
-	const productLabel = path
-		.basename(product.config, ".xml")
-		.toLocaleUpperCase();
+	const productLabel = product.Identifier.toLocaleUpperCase();
 
 	// any products descriptions have productName in it, remove it
-	const productName = product.name.replace(productLabel, "");
-
-	// for some reasons some products already have the prefix `0x`, remove it
-	product.id = product.id.replace(/^0x/, "");
-	product.type = product.type.replace(/^0x/, "");
+	const productName = product.Name.replace(productLabel, "");
 
 	// Format the device IDs like we expect them
-	const productId = formatId(product.id);
-	const productType = formatId(product.type);
-	const manufacturerIdHex = formatId(manufacturerId);
+	const productId = product.ProductId;
+	const productType = product.ProductTypeId;
+	const manufacturerIdHex = product.ManufacturerId;
+	const metadata = product.Texts;
+	const description = product.Description;
+	const commandClasses = product.ControlledCommandClasses;
 
+	// TODO: Include the firmware version in the device configuration comparison
 	const deviceConfigs =
 		configManager
 			.getIndex()
@@ -841,16 +839,6 @@ async function parseZWAProduct(
 			await fs.readFile(fileNameAbsolute, "utf8"),
 		);
 	}
-
-	// Parse the ZWA xml file
-	const json = xml2json.toJson(productFile, {
-		object: true,
-		coerce: true, // coerce types
-	}).Product as Record<string, any>;
-
-	// const metadata = ensureArray(json.MetaData?.MetaDataItem);
-	// const name = metadata.find((m: any) => m.name === "Name")?.$t;
-	// const description = metadata.find((m: any) => m.name === "Description")?.$t;
 
 	const devices = existingDevice?.devices ?? [];
 
@@ -893,18 +881,25 @@ async function parseZWAProduct(
 		}
 	}
 
-	const commandClasses = ensureArray(json.CommandClass);
+	// Setup and compare the parameters
+	const parameters = product.ConfigurationParameters;
 
-	// parse config params: <CommandClass id="112"> ...values... </CommandClass>
-	const parameters = ensureArray(
-		commandClasses.find((c: any) => c.id === CommandClasses.Configuration)
-			?.Value,
-	);
+	// Test if parameter values include bitsets
+	// TODO add bitset handling
+
+	let isBitSet = false;
 	for (const param of parameters) {
-		if (isNaN(param.index)) continue;
+		for (const value of param.ConfigurationParameterValues) {
+			if (value.To > 10000) {
+				isBitSet = true;
+			}
+		}
+	}
 
-		const isBitSet = param.type === "bitset";
+	// Temporarily skip bitsets
+	if (isBitSet === true) return;
 
+	for (const param of parameters) {
 		if (isBitSet) {
 			// BitSets are split into multiple partial parameters
 			const bitSetIds = ensureArray(param.BitSet);
@@ -942,27 +937,27 @@ async function parseZWAProduct(
 				newConfig.paramInformation[id] = parsedParam;
 			}
 		} else {
-			const parsedParam = newConfig.paramInformation[param.index] ?? {};
-
+			const parsedParam =
+				newConfig.paramInformation[param.ParameterNumber] ?? {};
 			// By default, update existing properties with new descriptions
-			// OZW's config fields could be empty strings, so we need to use || instead of ??
-			parsedParam.label =
-				ensureArray(param.label)[0] || parsedParam.label;
+			parsedParam.label = param.Name || parsedParam.label;
 			parsedParam.description =
-				ensureArray(param.Help)[0] || parsedParam.description;
+				param.ConfigurationParameterValues.length > 1 // Sometimes values options are described and not presented as options
+					? param.Description
+					: param.ConfigurationParameterValues[0].Description;
 			parsedParam.valueSize = updateNumberOrDefault(
-				param.size,
+				param.Size,
 				parsedParam.valueSize,
 				1,
 			);
 			parsedParam.minValue = updateNumberOrDefault(
-				param.min,
+				param.minValue,
 				parsedParam.min,
 				0,
 			);
 			try {
 				parsedParam.maxValue = updateNumberOrDefault(
-					param.max,
+					param.maxValue,
 					parsedParam.max,
 					getIntegerLimits(parsedParam.valueSize, false).max, // choose the biggest possible number if no max is given
 				);
@@ -970,13 +965,14 @@ async function parseZWAProduct(
 				// some config params have absurd value sizes, ignore them
 				parsedParam.maxValue = parsedParam.minValue;
 			}
-			parsedParam.readOnly =
-				param.read_only === true || param.read_only === "true";
-			parsedParam.writeOnly =
-				param.write_only === true || param.write_only === "true";
-			parsedParam.allowManualEntry = param.type !== "list";
+			parsedParam.readOnly = param.flagReadOnly;
+			parsedParam.writeOnly = param.Description.includes("write") // zWave Alliance typically puts (write only) in the description
+				? true
+				: false;
+			parsedParam.allowManualEntry =
+				param.ConfigurationParameterValues.length === 1 ? true : false;
 			parsedParam.defaultValue = updateNumberOrDefault(
-				param.value,
+				param.DefaultValue,
 				parsedParam.value,
 				parsedParam.minValue, // choose the smallest possible number if no default is given
 			);
@@ -995,32 +991,30 @@ async function parseZWAProduct(
 				parsedParam.description = "";
 			}
 
-			const items = ensureArray(param.Item);
-
 			// Parse options list
-			// <Item label="Option 1" value="1"/>
-			// <Item label="Option 2" value="2"/>
-			if (param.type === "list" && items.length > 0) {
-				parsedParam.options = [];
-				for (const item of items) {
-					if (
-						!parsedParam.options.find(
-							(v: any) => v.value === item.value,
-						)
-					) {
-						const opt = {
-							label: item.label.toString(),
-							value: parseInt(item.value),
-						};
-						parsedParam.options.push(opt);
-					}
+			parsedParam.options = [];
+			for (const item of param.ConfigurationParameterValues) {
+				// Values are given as options
+				if (item.From === item.To) {
+					const opt = {
+						label: item.Description,
+						value: item.To,
+					};
+					parsedParam.options.push(opt);
+				} else {
+					// Sometimes options appear to be a list but present multiple values; these will require manual correction
+					const opt = {
+						label: item.Description,
+						value: item.To,
+					};
+					parsedParam.options.push(opt);
+					const requiresManualCorrection = true;
 				}
 			}
 
-			newConfig.paramInformation[param.index] = parsedParam;
+			newConfig.paramInformation[param.ParameterNumber] = parsedParam;
 		}
-	}
-
+		/*
 	// parse associations contained in command class 133 and 142
 	const associations = [
 		...ensureArray(
@@ -1071,16 +1065,17 @@ async function parseZWAProduct(
 		if (toRemove.length > 0) {
 			newConfig.compat.cc.remove = toRemove;
 		}
-	}
-	// create the target dir for this config file if doesn't exists
-	const manufacturerDir = path.join(processedDir, manufacturerIdHex);
-	await fs.ensureDir(manufacturerDir);
+	}*/
+		// create the target dir for this config file if doesn't exists
+		const manufacturerDir = path.join(processedDir, manufacturerIdHex);
+		await fs.ensureDir(manufacturerDir);
 
-	// write the updated configuration file
-	await fs.writeFile(
-		fileNameAbsolute,
-		stringify(normalizeConfig(newConfig), "\t"),
-	); */
+		// write the updated configuration file
+		await fs.writeFile(
+			fileNameAbsolute,
+			stringify(normalizeConfig(newConfig), "\t"),
+		);
+	}
 }
 
 /**
