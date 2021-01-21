@@ -318,6 +318,7 @@ function normalizeConfig(config: Record<string, any>): Record<string, any> {
 		associations: config.associations,
 		paramInformation: {},
 		compat: config.compat,
+		metadata: config.metadata,
 	};
 
 	// Delete optional properties if they have no relevant entry
@@ -330,7 +331,9 @@ function normalizeConfig(config: Record<string, any>): Record<string, any> {
 	if (!normalized.compat || Object.keys(normalized.compat).length === 0) {
 		delete normalized.compat;
 	}
-
+	if (!normalized.metadata || Object.keys(normalized.metadata).length === 0) {
+		delete normalized.metadata;
+	}
 	if (
 		config.paramInformation &&
 		Object.keys(config.paramInformation).length > 0
@@ -438,8 +441,8 @@ async function parseOZWProduct(
 	const productName = product.name.replace(productLabel, "");
 
 	// for some reasons some products already have the prefix `0x`, remove it
-	product.id = product.id.replace(/^0x/, "");
-	product.type = product.type.replace(/^0x/, "");
+	product.id = product.ProductId.replace(/^0x/, "");
+	product.type = product.ProductTypeId.replace(/^0x/, "");
 
 	// Format the device IDs like we expect them
 	const productId = formatId(product.id);
@@ -713,23 +716,18 @@ async function parseOZWProduct(
 	);
 }
 
-/** Parse a directory of zWave Alliance device xmls */
+/*********************************************************
+ *														 *
+ *          zWave Alliance Processing Section            *
+ * 														 *
+ * *******************************************************/
+
+/**
+ * Parse a directory of zWave Alliance device xmls
+ * */
 async function parseZWAFiles(): Promise<void> {
-	/* const jsonData = [];
-
-	const configFiles = await enumFilesRecursive(zwaTempDir, (file) =>
-		file.endsWith(".xml"),
-	);
-
-	for (const file of configFiles) {
-		const j = xml2json.toJson(await fs.readFileSync(file, "utf8"), {
-			object: true,
-		});
-		jsonData.push(j);
-	} */
-
 	// Parse json files in the zwaTempDir
-	const jsonData = [];
+	let jsonData = [];
 
 	const configFiles = await enumFilesRecursive(zwaTempDir, (file) =>
 		file.endsWith(".json"),
@@ -738,15 +736,24 @@ async function parseZWAFiles(): Promise<void> {
 	for (const file of configFiles) {
 		const j = await fs.readFile(file, "utf8");
 
-		/* zWave Alliance numbering isn't always continuous and an html page is returned when a device number doesn't 
-		   Test for and delete such html files. */
+		/**
+		 * zWave Alliance numbering isn't always continuous and an html page is 
+		returned when a device number doesn't. Test for and delete such files.
+		 */
 		if (j.charAt(0) === "{") {
 			jsonData.push(JSON.parse(j));
 		} else {
 			void fs.unlink(file);
-			console.log(`Removing missing product file: ${file.Id}.json`);
 		}
 	}
+	// Temp
+	for (const file of jsonData) {
+		if (!file.Identifier || file.Identifier === "") {
+			console.log(`Missing identifier: ${file.Id}`);
+		}
+	}
+	// Combine provided files within models
+	jsonData = combineDeviceFiles(jsonData);
 
 	// Load our existing config files to cross-reference
 	await configManager.loadManufacturers();
@@ -755,36 +762,179 @@ async function parseZWAFiles(): Promise<void> {
 	}
 
 	for (const file of jsonData) {
+		// Lookup the manufacturer
 		const manufacturerId = parseInt(file.ManufacturerId, 16);
-
-		// Rarely, zWave Alliance files lack a ManufacturerId, which breaks writing manufacturers.json, so check for that
-		if (isNaN(manufacturerId)) {
-			console.log(
-				`Error: manufacturerId failed to convert to a number: ${file.Id}.json -- ${file.Brand} -- ${manufacturerId}`,
-			);
-			continue;
-		}
-
 		const manufacturerName = configManager.lookupManufacturer(
 			manufacturerId,
 		);
 
 		// Add the manufacturer to our manufacturers.json if it is missing
-		if (manufacturerName === undefined && file.Brand !== undefined) {
+		if (isNaN(manufacturerId)) {
+			console.log(
+				`Skipping file ${file.Id}.json due to missing manufacturerId`,
+			);
+		} else if (manufacturerName === undefined && file.Brand !== undefined) {
 			console.log(`Adding missing manufacturer: ${file.Brand}`);
-			// let this here, if program.manufacturers is false it will not
-			// write the manufacturers to file
 			configManager.setManufacturer(manufacturerId, file.Brand);
 		}
 
-		if (program.devices) {
+		/**
+		 *  Process and write the device files, if called with program.devices
+		 */
+
+		if (program.devices && file.ProductId) {
 			await parseZWAProduct(file, manufacturerId, manufacturerName);
 		}
 	}
 
+	/**
+	 *  Write the manufacturer.json file, if called with program.manufacturers
+	 */
 	if (program.manufacturers) {
 		await configManager.saveManufacturers();
 	}
+}
+
+/***
+ * Combine zWave Alliance Device Files
+ */
+function combineDeviceFiles(json: Array<object>) {
+	for (const file of json) {
+		const identifier = file.Identifier ? file.Identifier : "Unknown";
+		const normalizedIdentifier = normalizeIdentifier(identifier);
+		file.Identifier = normalizedIdentifier[0];
+		file.OriginalIdentifier = normalizedIdentifier[1];
+	}
+
+	for (const file of json) {
+		const testManufactuer: number = file.ManufacturerId;
+		const testCertification: string = file.CertificationNumber;
+		const testParameters = file.ConfigurationParameters;
+		const testIdentifier = file.Identifier;
+
+		// Don't process if we've already seen this file
+		if (!file.ProductId) {
+			continue;
+		}
+
+		// Only deal with formatted IDs
+		file.ProductId = file.ProductId.replace(/^0x/, "");
+		file.ProductId = formatId(file.ProductId);
+		file.ProductTypeId = file.ProductTypeId.replace(/^0x/, "");
+		file.ProductTypeId = formatId(file.ProductTypeId);
+
+		for (const test_file of json) {
+			// Don't reprocess test files we've already seen
+			if (!test_file.ProductId) {
+				continue;
+			}
+
+			// Only deal with formatted IDs, but have to test as these will be undefined on subsequent visits
+			test_file.ProductId = test_file.ProductId.replace(/^0x/, "");
+			test_file.ProductId = formatId(test_file.ProductId);
+			test_file.ProductTypeId = test_file.ProductTypeId.replace(
+				/^0x/,
+				"",
+			);
+			test_file.ProductTypeId = formatId(test_file.ProductTypeId);
+
+			if (
+				test_file.ManufacturerId === testManufactuer &&
+				test_file.ProductId
+			) {
+				// Add the current file being tested
+				if (
+					test_file.Identifier === testIdentifier &&
+					test_file.CertificationNumber === testCertification
+				) {
+					file.combinedDevices = createOrUpdateArray(
+						file.combinedDevices,
+						{
+							ProductId: test_file.ProductId,
+							ProductTypeId: test_file.ProductTypeId,
+							Id: test_file.Id,
+							Brand: test_file.Brand,
+							Identifier: test_file.Identifier,
+						},
+					);
+				}
+				// Duplicate of file tested, so add the ID and remove the duplicate
+				else if (
+					test_file.ProductId === file.ProductId &&
+					test_file.ProductTypeId === file.ProductTypeId &&
+					isEquivalentParameters(
+						testParameters,
+						test_file?.ConfigurationParameters,
+						"ParameterNumber",
+					)
+				) {
+					file.combinedDevices = createOrUpdateArray(
+						file.combinedDevices,
+						{
+							ProductId: test_file.ProductId,
+							ProductTypeId: test_file.ProductTypeId,
+							Id: test_file.Id,
+							Brand: test_file.Brand,
+							Identifier: test_file.Identifier,
+						},
+					);
+					delete test_file.Identifier;
+					delete test_file.ProductId;
+				}
+				// Combine devices with matching identifiers AND equivalent parameters
+				else if (
+					test_file.Identifier === testIdentifier &&
+					testIdentifier !== "Unknown" &&
+					testIdentifier.length > 3 &&
+					isEquivalentParameters(
+						testParameters,
+						test_file?.ConfigurationParameters,
+						"ParameterNumber",
+					)
+				) {
+					file.combinedDevices = createOrUpdateArray(
+						file.combinedDevices,
+						{
+							ProductId: test_file.ProductId,
+							ProductTypeId: test_file.ProductTypeId,
+							Id: test_file.Id,
+							Brand: test_file.Brand,
+							Identifier: test_file.Identifier,
+						},
+					);
+					delete test_file.Identifier;
+					delete test_file.ProductId;
+				}
+				// Show an error if the device parameters should match, but they don't
+				// TODO add erorr handling if a FW changes parameters
+				else if (
+					test_file.ProductId === file.ProductId &&
+					test_file.ProductTypeId === file.ProductTypeId &&
+					isEquivalentParameters(
+						testParameters,
+						test_file?.ConfigurationParameters,
+						"ParameterNumber",
+					) == false
+				) {
+					console.log(
+						`ERROR ERROR ERROR - Will end up with duplicate device file due to firmware change -- ${file.Id} and ${test_file.Id}`,
+					);
+				}
+				// We were wrong to change the identifier because the params don't match, restore the tested file as it is different
+				else if (
+					test_file.Identifier === testIdentifier &&
+					isEquivalentParameters(
+						testParameters,
+						test_file?.ConfigurationParameters,
+						"ParameterNumber",
+					) === false
+				) {
+					test_file.Identifier = test_file.OriginalIdentifier;
+				}
+			}
+		}
+	}
+	return json;
 }
 
 /**
@@ -800,35 +950,47 @@ async function parseZWAProduct(
 	manufacturer: string | undefined,
 ): Promise<void> {
 	const productFile = product;
-	const productLabel = product.Identifier.toLocaleUpperCase();
+	const productLabel = product.Identifier;
 
 	// any products descriptions have productName in it, remove it
 	const productName = product.Name.replace(productLabel, "");
 
 	// Format the device IDs like we expect them
-	const productId = product.ProductId;
-	const productType = product.ProductTypeId;
-	const manufacturerIdHex = product.ManufacturerId;
-	const metadata = product.Texts;
-	const description = product.Description;
+
+	let manufacturerIdHex = product.ManufacturerId.replace(/^0x/, "");
+	manufacturerIdHex = formatId(manufacturerIdHex);
 	const commandClasses = product.ControlledCommandClasses;
 
-	// TODO: Include the firmware version in the device configuration comparison
-	const deviceConfigs =
-		configManager
-			.getIndex()
-			?.filter(
-				(f: DeviceConfigIndexEntry) =>
-					f.manufacturerId === manufacturerIdHex &&
-					f.productType === productType &&
-					f.productId === productId,
-			) ?? [];
-	const latestConfig = getLatestConfigVersion(deviceConfigs);
+	/*************************************
+	 *	Load the device configurations   *
+	 *************************************/
+	let deviceConfigs: any;
+	for (const device of product.combinedDevices) {
+		// Reformat the IDs and assign them back
+		deviceConfigs =
+			configManager
+				.getIndex()
+				?.filter(
+					(f: DeviceConfigIndexEntry) =>
+						f.manufacturerId === manufacturerIdHex &&
+						f.productType === device.ProductTypeId &&
+						f.productId === device.ProductId,
+				) ?? [];
+		if (deviceConfigs) {
+			break;
+		}
+	}
 
 	// Determine where the config file should be
-	const fileNameRelative =
-		latestConfig?.filename ??
-		`${manufacturerIdHex}/${labelToFilename(productLabel)}.json`;
+	const latestConfig = getLatestConfigVersion(deviceConfigs) ?? [];
+	let fileNameRelative: string;
+	if (latestConfig.filename) {
+		fileNameRelative = latestConfig?.filename;
+	} else {
+		fileNameRelative =
+			latestConfig?.filename ??
+			`${manufacturerIdHex}/${labelToFilename(productLabel)}.json`;
+	}
 	const fileNameAbsolute = path.join(processedDir, fileNameRelative);
 
 	// Load the existing config so we can merge it with the updated information
@@ -840,17 +1002,37 @@ async function parseZWAProduct(
 		);
 	}
 
+	/********************************
+	 *    Build the device lists    *
+	 ********************************/
 	const devices = existingDevice?.devices ?? [];
 
-	if (
-		!devices.some(
-			(d: { productType: string; productId: string }) =>
-				d.productType === productType && d.productId === productId,
-		)
-	) {
-		devices.push({ productType, productId });
+	for (const dev of product.combinedDevices) {
+		if (
+			!devices.some(
+				(d: { productType: string; productId: string }) =>
+					d.productType === dev.ProductTypeId &&
+					d.productId === dev.ProductId,
+			)
+		) {
+			devices.push({
+				productType: dev.ProductTypeId,
+				productId: dev.ProductId,
+				zwaveAllianceId: dev.Id,
+			});
+		}
 	}
 
+	/***************************************
+	 *   Setup the initial configuration   *
+	 ***************************************/
+
+	const inclusion = product?.Texts?.find((document) => document.Type === 1)
+		?.value;
+	const exclusion = product?.Texts?.find((document) => document.Type === 2)
+		?.value;
+	const reset = product?.Texts?.find((document) => document.Type === 5)
+		?.value;
 	const newConfig: Record<string, any> = {
 		manufacturer,
 		manufacturerId: manufacturerIdHex,
@@ -865,28 +1047,21 @@ async function parseZWAProduct(
 		paramInformation: existingDevice?.paramInformation ?? {},
 		compat: existingDevice?.compat,
 	};
-
-	// Merge the devices array with a potentially existing one
-	if (existingDevice) {
-		for (const device of existingDevice.devices) {
-			if (
-				!newConfig.devices.some(
-					(d: any) =>
-						d.productType === device.productType &&
-						d.productId === device.productId,
-				)
-			) {
-				newConfig.devices.push(device);
-			}
-		}
+	if (inclusion || exclusion || reset) {
+		newConfig.metadata = {
+			inclusion: inclusion,
+			exclusion: exclusion,
+			reset: reset,
+		};
 	}
 
-	// Setup and compare the parameters
+	/**********************
+	 *     Parameters     *
+	 **********************/
 	const parameters = product.ConfigurationParameters;
 
 	// Test if parameter values include bitsets
 	// TODO add bitset handling
-
 	let isBitSet = false;
 	for (const param of parameters) {
 		for (const value of param.ConfigurationParameterValues) {
@@ -895,11 +1070,12 @@ async function parseZWAProduct(
 			}
 		}
 	}
-
 	// Temporarily skip bitsets
 	if (isBitSet === true) return;
 
+	let requiresManualReview = false;
 	for (const param of parameters) {
+		// Bitset Paraemeters
 		if (isBitSet) {
 			// BitSets are split into multiple partial parameters
 			const bitSetIds = ensureArray(param.BitSet);
@@ -936,7 +1112,9 @@ async function parseZWAProduct(
 
 				newConfig.paramInformation[id] = parsedParam;
 			}
-		} else {
+		}
+		// Non-bitset Parameters
+		else {
 			const parsedParam =
 				newConfig.paramInformation[param.ParameterNumber] ?? {};
 			// By default, update existing properties with new descriptions
@@ -976,7 +1154,20 @@ async function parseZWAProduct(
 				parsedParam.value,
 				parsedParam.minValue, // choose the smallest possible number if no default is given
 			);
-			parsedParam.unsigned = true; // ozw values are all unsigned
+
+			// Sanity check some values
+			parsedParam.minValue =
+				parsedParam.minValue <= parsedParam.defaultValue
+					? parsedParam.minValue
+					: parsedParam.defaultValue;
+			parsedParam.maxValue =
+				parsedParam.maxValue >= parsedParam.defaultValue
+					? parsedParam.maxValue
+					: parsedParam.defaultValue;
+			parsedParam.writeOnly =
+				parsedParam.readOnly === false ? parsedParam.writeOnly : true;
+
+			//parsedParam.unsigned = true; // ozw values are all unsigned
 
 			if (param.units) {
 				parsedParam.unit = param.units;
@@ -991,91 +1182,113 @@ async function parseZWAProduct(
 				parsedParam.description = "";
 			}
 
-			// Parse options list
-			parsedParam.options = [];
-			for (const item of param.ConfigurationParameterValues) {
-				// Values are given as options
-				if (item.From === item.To) {
-					const opt = {
-						label: item.Description,
-						value: item.To,
-					};
-					parsedParam.options.push(opt);
-				} else {
-					// Sometimes options appear to be a list but present multiple values; these will require manual correction
-					const opt = {
-						label: item.Description,
-						value: item.To,
-					};
-					parsedParam.options.push(opt);
-					const requiresManualCorrection = true;
+			// Parse options list if manual entry is disallowed (i.e. options picker)
+			if (parsedParam.allowManualEntry === false) {
+				parsedParam.options = [];
+				for (const item of param.ConfigurationParameterValues) {
+					// Values are given as options
+					if (item.From === item.To) {
+						const opt = {
+							label: item.Description,
+							value: item.To,
+						};
+						parsedParam.options.push(opt);
+					} else {
+						// Sometimes options appear to be a list but present multiple values; these will require manual correction
+						const opt = {
+							label: item.Description,
+							value: item.To,
+						};
+						parsedParam.options.push(opt);
+						requiresManualReview = true;
+					}
 				}
 			}
-
 			newConfig.paramInformation[param.ParameterNumber] = parsedParam;
 		}
-		/*
-	// parse associations contained in command class 133 and 142
-	const associations = [
-		...ensureArray(
-			commandClasses.find((c: any) => c.id === CommandClasses.Association)
-				?.Associations?.Group,
-		),
-		...ensureArray(
-			commandClasses.find(
-				(c: any) =>
-					c.id === CommandClasses["Multi Channel Association"],
-			)?.Associations?.Group,
-		),
-	];
-
-	if (associations.length > 0) {
-		newConfig.associations ??= {};
-		for (const ass of associations) {
-			const parsedAssociation = newConfig.associations[ass.index] ?? {};
-
-			parsedAssociation.label = ass.label;
-			parsedAssociation.maxNodes = ass.max_associations;
-			// Only set the isLifeline key if its true
-			const isLifeline =
-				/lifeline/i.test(ass.label) ||
-				ass.auto === "true" ||
-				ass.auto === true;
-			if (isLifeline) parsedAssociation.isLifeline = true;
-
-			newConfig.associations[ass.index] = parsedAssociation;
-		}
 	}
 
-	// Some devices report other CCs than they support, add this information to the compat field
-	const toAdd = commandClasses
-		.filter((c) => c.action === "add")
-		.map((c) => c.id);
-	const toRemove = commandClasses
-		.filter((c) => c.action === "remove")
-		.map((c) => c.id);
+	/********************************
+	 *        Associations		    *
+	 ********************************/
 
-	if (toAdd.length > 0 || toRemove.length > 0) {
-		newConfig.compat ??= {};
-		newConfig.compat.cc ??= {};
+	// If Z-Wave+ is supported, we don't usually need the association information to determine the lifeline, but we still set it up in case we do
 
-		if (toAdd.length > 0) {
-			newConfig.compat.cc.add = toAdd;
+	let zwavePlus = product?.SupportedCommandClasses?.find((document) =>
+		document.Identifier.includes("ZWAVEPLUS"),
+	)
+		? true
+		: false;
+
+	const newAssociations = {};
+	for (const ass of product.AssociationGroups) {
+		let label: string =
+			ass.group_name.length > 0
+				? ass.group_name
+				: "Group " + ass.GroupNumber.toString();
+		const maxNodes = ass.MaximumNodes;
+		const groupName = ass.group_name.toLowerCase();
+		const description = ass.Description.toLowerCase();
+		let lifeline = false;
+		if (
+			groupName.includes("lifeline") ||
+			description.includes("lifeline")
+		) {
+			lifeline = true;
+
+			// Lifeline reporting on other than #1, so we need associations even if zWave Plus
+			if (ass.GroupNumber !== 1) {
+				zwavePlus = false;
+			}
 		}
-		if (toRemove.length > 0) {
-			newConfig.compat.cc.remove = toRemove;
-		}
-	}*/
-		// create the target dir for this config file if doesn't exists
-		const manufacturerDir = path.join(processedDir, manufacturerIdHex);
-		await fs.ensureDir(manufacturerDir);
 
-		// write the updated configuration file
-		await fs.writeFile(
-			fileNameAbsolute,
-			stringify(normalizeConfig(newConfig), "\t"),
+		// Add double tap support if supported by the device
+		if (groupName.includes("double") || description.includes("double")) {
+			label = "Double Tap";
+			lifeline = true; // Required to receive Basic Set notifications
+			zwavePlus = false; // Required
+
+			if (newConfig.compat) {
+				newConfig.compat.disableBasicMapping = true;
+			} else {
+				newConfig.compat = {};
+				newConfig.compat.disableBasicMapping = true;
+			}
+		}
+
+		if (zwavePlus) {
+			newAssociations[ass.GroupNumber] = {
+				label: label,
+				maxNodes: maxNodes,
+			};
+			if (lifeline) {
+				newAssociations[ass.GroupNumber].isLifeline = true;
+			}
+		}
+	}
+	newConfig.associations = newAssociations;
+
+	// Warn if the device file requires conflicts to be resolved
+	if (requiresManualReview) {
+		console.log(
+			`ERROR - Manual review required due to potential conflicts or invalid values: ${fileNameAbsolute}`,
 		);
 	}
+	/*************************************
+	 *   Write the configuration file    *
+	 *************************************/
+
+	// Create the dir if necessary
+	const manufacturerDir = path.join(processedDir, manufacturerIdHex);
+	await fs.ensureDir(manufacturerDir);
+
+	// Write the file
+	// Add a comment explaining which device this is
+	// prettier-ignore
+	const output = `// ${newConfig.manufacturer} ${newConfig.label}${newConfig.description ? (`
+// ${newConfig.description}`) : ""}
+${stringify(normalizeConfig(newConfig), "\t")}`;
+	await fs.writeFile(fileNameAbsolute, output, "utf8");
 }
 
 /**
@@ -1336,6 +1549,131 @@ async function importConfigFiles(): Promise<void> {
 ${stringify(parsed, "\t")}`;
 		await fs.writeFile(outFilename, output, "utf8");
 	}
+}
+
+/****************************************************************************
+ *                   Normalize Identifier function                          *
+ * Strips out common model number variations representing different         *
+ * jurisdicitons, which typically share firmware and parameter settings     *
+ * 																			*
+ * Note: Returns an array of the new identifier, and the original           *
+ ****************************************************************************/
+function normalizeIdentifier(originalIdentifier: string) {
+	// Cleanup current Identifier and store in case of later duplicate files
+	let newIdentifier = originalIdentifier;
+
+	const suffixToRemove = [
+		"us",
+		"US",
+		"(US)",
+		"eu",
+		"EU",
+		"(EU)",
+		"ru",
+		"RU",
+		"(RU)",
+		"au",
+		"AU",
+		"(AU)",
+		"cm",
+		"CM",
+		"(CM)",
+		"-1",
+		"-2",
+		"-3",
+		"-4",
+		"a",
+		"A",
+		"b",
+		"B",
+		"c",
+		"C",
+		"d",
+		"D",
+	];
+	for (const suffix of suffixToRemove) {
+		if (newIdentifier.slice(-suffix.length) == suffix) {
+			newIdentifier = newIdentifier.slice(0, -suffix.length);
+			break;
+		}
+	}
+
+	const prohibitedEndChars = ["-", ".", "_", ",", " "];
+	for (const endChar of prohibitedEndChars) {
+		if (newIdentifier.slice(-1) === endChar) {
+			newIdentifier = newIdentifier.slice(0, -1);
+			break;
+		}
+	}
+	newIdentifier = newIdentifier.toLocaleUpperCase();
+	return [newIdentifier, originalIdentifier];
+}
+
+/****************************************************************************
+ *                   Parameter Comparison function                          *
+ * Compare two sets of parameters and return true if the numbers match      *
+ * 																			*
+ * Note: Accepts as a string the name of the parameter key in the object    *
+ ****************************************************************************/
+
+function isEquivalentParameters(
+	tested_device: any = [],
+	compared_device: any = [],
+	parameterKey: string,
+) {
+	const testParameters = new Set();
+	//tested_device = tested_device ?? [];
+	//compared_device = compared_device ?? [];
+	for (const tp of tested_device) {
+		const temp = tp[parameterKey];
+		testParameters.add(temp);
+	}
+
+	const compareParameters = new Set();
+	for (const cp of compared_device) {
+		const temp = cp[parameterKey];
+		compareParameters.add(temp);
+	}
+
+	const setDifference = new Set(
+		[...compareParameters].filter((x) => !testParameters.has(x)),
+	);
+	if (setDifference.size == 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+/****************************************************************************
+ *                 Create array, or update array if it exists,              *
+ * 				   append ZWA Ids										    *
+ ****************************************************************************/
+
+function createOrUpdateArray(potentialArray: any, update: any) {
+	potentialArray = potentialArray ?? [];
+	const newArray = potentialArray;
+	for (const arr of newArray) {
+		if (
+			(arr.ProductId === update.ProductId &&
+				arr.ProductTypeId === update.ProductTypeId) ||
+			(arr.ProductId === formatId(update.ProductId) &&
+				arr.ProductTypeId === formatId(update.ProductTypeId))
+		) {
+			if (Array.isArray(arr.Id)) {
+				arr.Id.push(update.Id);
+			} else {
+				const temp = arr.Id;
+				arr.Id = [];
+				arr.Id.push(temp);
+				arr.Id.push(update.Id);
+			}
+			return newArray;
+		}
+	}
+	newArray.push(update);
+	//Array.prototype.push.apply(newArray, update);
+	return newArray;
 }
 
 /**
