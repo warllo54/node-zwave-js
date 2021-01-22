@@ -868,6 +868,7 @@ function combineDeviceFiles(json: Array<object>) {
 						"ParameterNumber",
 					)
 				) {
+					// Add the device
 					file.combinedDevices = createOrUpdateArray(
 						file.combinedDevices,
 						{
@@ -880,8 +881,27 @@ function combineDeviceFiles(json: Array<object>) {
 					);
 					delete test_file.Identifier;
 					delete test_file.ProductId;
+
+					// Merge the files themselves
+					file.SupportedCommandClasses = keepLongest(
+						file.SupportedCommandClasses,
+						test_file.SupportedCommandClasses,
+					);
+					file.AssociationGroups = keepLongest(
+						file.AssociationGroups,
+						test_file.AssociationGroups,
+					);
+					file.Documents = keepLongest(
+						file.Documents,
+						test_file.Documents,
+					);
+					file.Texts = keepLongest(file.Texts, test_file.Texts);
+					file.Features = keepLongest(
+						file.Features,
+						test_file.Features,
+					);
 				}
-				// Combine devices with matching identifiers AND equivalent parameters
+				// Combine devices with similar identifiers AND equivalent parameters
 				else if (
 					test_file.Identifier === testIdentifier &&
 					testIdentifier !== "Unknown" &&
@@ -904,6 +924,35 @@ function combineDeviceFiles(json: Array<object>) {
 					);
 					delete test_file.Identifier;
 					delete test_file.ProductId;
+
+					// Merge the files themselves
+					// If they aren't both zwave plus, we need to strike the command classes
+					if (
+						bothZwavePlus(
+							file.SupportedCommandClasses,
+							test_file.SupportedCommandClasses,
+						)
+					) {
+						file.SupportedCommandClasses = keepLongest(
+							file.SupportedCommandClasses,
+							test_file.SupportedCommandClasses,
+						);
+					} else {
+						file.SupportedCommandClasses = [];
+					}
+					file.AssociationGroups = keepLongest(
+						file.AssociationGroups,
+						test_file.AssociationGroups,
+					);
+					file.Documents = keepLongest(
+						file.Documents,
+						test_file.Documents,
+					);
+					file.Texts = keepLongest(file.Texts, test_file.Texts);
+					file.Features = keepLongest(
+						file.Features,
+						test_file.Features,
+					);
 				}
 				// Show an error if the device parameters should match, but they don't
 				// TODO add erorr handling if a FW changes parameters
@@ -933,6 +982,29 @@ function combineDeviceFiles(json: Array<object>) {
 				}
 			}
 		}
+	}
+	function keepLongest(current_group: any, test_group: any) {
+		if (current_group.length >= test_group.length) {
+			return current_group;
+		} else {
+			return test_group;
+		}
+	}
+
+	function bothZwavePlus(current_group: any, test_group: any) {
+		for (const z of current_group) {
+			for (const class2 of test_group) {
+				if (
+					(z.Identifier.includes("ZWAVEPLUS") ||
+						z.Identifier.includes("ASSOCIATION_GRP_INFO")) &&
+					(class2.Identifier.includes("ZWAVEPLUS") ||
+						class2.Identifier.includes("ASSOCIATION_GRP_INFO"))
+				) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	return json;
 }
@@ -966,7 +1038,6 @@ async function parseZWAProduct(
 	 *************************************/
 	let deviceConfigs: any;
 	for (const device of product.combinedDevices) {
-		// Reformat the IDs and assign them back
 		deviceConfigs =
 			configManager
 				.getIndex()
@@ -1008,6 +1079,17 @@ async function parseZWAProduct(
 	const devices = existingDevice?.devices ?? [];
 
 	for (const dev of product.combinedDevices) {
+		// Append the zwa device ID to existing devices
+		for (const eDevice of devices) {
+			if (
+				eDevice.productType == dev.ProductTypeId &&
+				eDevice.productId == dev.ProductId
+			) {
+				eDevice.zwaveAllianceId = dev.Id;
+			}
+		}
+
+		// Add new devices
 		if (
 			!devices.some(
 				(d: { productType: string; productId: string }) =>
@@ -1134,11 +1216,16 @@ async function parseZWAProduct(
 				0,
 			);
 			try {
+				const priorMax = parsedParam.maxValue;
 				parsedParam.maxValue = updateNumberOrDefault(
 					param.maxValue,
 					parsedParam.max,
 					getIntegerLimits(parsedParam.valueSize, false).max, // choose the biggest possible number if no max is given
 				);
+				parsedParam.maxValue =
+					parsedParam.maxValue >= priorMax
+						? parsedParam.maxValue
+						: priorMax;
 			} catch {
 				// some config params have absurd value sizes, ignore them
 				parsedParam.maxValue = parsedParam.minValue;
@@ -1167,10 +1254,11 @@ async function parseZWAProduct(
 			parsedParam.writeOnly =
 				parsedParam.readOnly === false ? parsedParam.writeOnly : true;
 
-			//parsedParam.unsigned = true; // ozw values are all unsigned
-
-			if (param.units) {
-				parsedParam.unit = param.units;
+			// Setup unsigned
+			if (parsedParam.minValue >= 0) {
+				parsedParam.unsigned = true;
+			} else {
+				delete parsedParam.unsigned;
 			}
 
 			// could have multiple translations, if so it's an array, the first is the english one
@@ -1214,13 +1302,26 @@ async function parseZWAProduct(
 
 	// If Z-Wave+ is supported, we don't usually need the association information to determine the lifeline, but we still set it up in case we do
 
-	let zwavePlus = product?.SupportedCommandClasses?.find((document) =>
+	let zwavePlus = false;
+	zwavePlus = product?.SupportedCommandClasses?.find((document) =>
 		document.Identifier.includes("ZWAVEPLUS"),
 	)
 		? true
-		: false;
+		: zwavePlus;
+	zwavePlus = product?.SupportedCommandClasses?.find((document) =>
+		document.Identifier.includes("ASSOCIATION_GRP_INFO"),
+	)
+		? true
+		: zwavePlus;
+	zwavePlus = product?.AssociationGroups?.find((document) =>
+		document.Description.includes("Z-Wave Plus"),
+	)
+		? true
+		: zwavePlus;
+	zwavePlus = existingDevice?.supportsZWavePlus ? true : zwavePlus;
 
 	const newAssociations = {};
+	let addCompat = false;
 	for (const ass of product.AssociationGroups) {
 		let label: string =
 			ass.group_name.length > 0
@@ -1247,6 +1348,7 @@ async function parseZWAProduct(
 			label = "Double Tap";
 			lifeline = true; // Required to receive Basic Set notifications
 			zwavePlus = false; // Required
+			addCompat = true;
 
 			if (newConfig.compat) {
 				newConfig.compat.disableBasicMapping = true;
@@ -1256,17 +1358,34 @@ async function parseZWAProduct(
 			}
 		}
 
-		if (zwavePlus) {
-			newAssociations[ass.GroupNumber] = {
-				label: label,
-				maxNodes: maxNodes,
-			};
-			if (lifeline) {
-				newAssociations[ass.GroupNumber].isLifeline = true;
-			}
+		newAssociations[ass.GroupNumber] = {
+			label: label,
+			maxNodes: maxNodes,
+		};
+		if (lifeline) {
+			newAssociations[ass.GroupNumber].isLifeline = true;
 		}
 	}
-	newConfig.associations = newAssociations;
+
+	// Overwrite the existing associations if we need to add the compat flag
+	if (Object.keys(newConfig.associations).length !== 0 && addCompat) {
+		newConfig.associations = newAssociations;
+	}
+	// Add the associations if the originals are blank AND the device is not zWavePlus.
+	else if (
+		Object.keys(newConfig.associations).length === 0 &&
+		zwavePlus === false
+	) {
+		newConfig.associations = newAssociations;
+	}
+
+	// TEMP -- only process no param files
+	if (
+		Object.keys(newConfig.paramInformation).length > 0 ||
+		Object.keys(newConfig.associations).length > 0
+	) {
+		return;
+	}
 
 	// Warn if the device file requires conflicts to be resolved
 	if (requiresManualReview) {
@@ -1590,6 +1709,7 @@ function normalizeIdentifier(originalIdentifier: string) {
 		"C",
 		"d",
 		"D",
+		"e",
 	];
 	for (const suffix of suffixToRemove) {
 		if (newIdentifier.slice(-suffix.length) == suffix) {
@@ -1672,7 +1792,6 @@ function createOrUpdateArray(potentialArray: any, update: any) {
 		}
 	}
 	newArray.push(update);
-	//Array.prototype.push.apply(newArray, update);
 	return newArray;
 }
 
