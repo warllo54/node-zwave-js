@@ -68,9 +68,9 @@ import {
 	ApplicationUpdateRequest,
 	ApplicationUpdateRequestNodeInfoReceived,
 } from "../controller/ApplicationUpdateRequest";
+import { BridgeApplicationCommandRequest } from "../controller/BridgeApplicationCommandRequest";
 import { ZWaveController } from "../controller/Controller";
 import {
-	isTransmitReport,
 	MAX_SEND_ATTEMPTS,
 	SendDataAbort,
 	SendDataMulticastRequest,
@@ -127,8 +127,6 @@ export interface ZWaveOptions {
 		report: number; // [1000...40000], default: 10000 ms
 		/** How long generated nonces are valid */
 		nonce: number; // [3000...20000], default: 5000 ms
-		/** How long a node is assumed to be awake after the last communication with it */
-		nodeAwake: number; // [1000...30000], default: 10000 ms
 	};
 
 	attempts: {
@@ -183,7 +181,6 @@ const defaultOptions: ZWaveOptions = {
 		report: 10000,
 		nonce: 5000,
 		sendDataCallback: 65000, // as defined in INS13954
-		nodeAwake: 10000,
 	},
 	attempts: {
 		controller: 3,
@@ -258,15 +255,6 @@ function checkOptions(options: ZWaveOptions): void {
 	if (options.timeouts.sendDataCallback < 10000) {
 		throw new ZWaveError(
 			`The Send Data Callback timeout must be at least 10000 milliseconds!`,
-			ZWaveErrorCodes.Driver_InvalidOptions,
-		);
-	}
-	if (
-		options.timeouts.nodeAwake < 1000 ||
-		options.timeouts.nodeAwake > 30000
-	) {
-		throw new ZWaveError(
-			`The Node awake timeout must be between 1000 and 30000 milliseconds!`,
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
 	}
@@ -569,7 +557,7 @@ export class Driver extends EventEmitter {
 						});
 					}
 				},
-				log: this.driverLog.print.bind(this),
+				log: this.driverLog.print.bind(this.driverLog),
 			},
 			pick(this.options, ["timeouts", "attempts"]),
 		);
@@ -737,6 +725,12 @@ export class Driver extends EventEmitter {
 	private _controllerInterviewed: boolean = false;
 	private _nodesReady = new Set<number>();
 	private _nodesReadyEventEmitted: boolean = false;
+
+	/** Indicates whether all nodes are ready, i.e. the "all nodes ready" event has been emitted */
+	public get allNodesReady(): boolean {
+		return this._nodesReadyEventEmitted;
+	}
+
 	/**
 	 * Initializes the variables for controller and nodes,
 	 * adds event handlers and starts the interview process.
@@ -852,6 +846,15 @@ export class Driver extends EventEmitter {
 			clearTimeout(this.retryNodeInterviewTimeouts.get(node.id)!);
 			this.retryNodeInterviewTimeouts.delete(node.id);
 		}
+
+		// Drop all pending messages that come from a previous interview attempt
+		this.rejectTransactions(
+			(t) =>
+				t.priority === MessagePriority.NodeQuery &&
+				t.message.getNodeId() === node.id,
+			"The interview was restarted",
+			ZWaveErrorCodes.Controller_MessageDropped,
+		);
 
 		const maxInterviewAttempts = this.options.attempts.nodeInterview;
 
@@ -1085,6 +1088,19 @@ export class Driver extends EventEmitter {
 			);
 		});
 
+		// Remove the node id from all cached neighbor lists and asynchronously make the affected nodes update their neighbor lists
+		for (const otherNode of this.controller.nodes.values()) {
+			if (otherNode !== node && otherNode.neighbors.includes(node.id)) {
+				otherNode.removeNodeFromCachedNeighbors(node.id);
+				otherNode.queryNeighborsInternal().catch((err) => {
+					this.driverLog.print(
+						`Failed to update neighbors for node ${otherNode.id}: ${err.message}`,
+						"warn",
+					);
+				});
+			}
+		}
+
 		// And clean up all remaining resources used by the node
 		node.destroy();
 
@@ -1237,6 +1253,16 @@ export class Driver extends EventEmitter {
 		}
 	}
 
+	/** Indicates whether the driver is ready, i.e. the "driver ready" event was emitted */
+	public get ready(): boolean {
+		return (
+			this._wasStarted &&
+			this._isOpen &&
+			!this._wasDestroyed &&
+			this._controllerInterviewed
+		);
+	}
+
 	private _cleanupHandler = (): void => {
 		void this.destroy();
 	};
@@ -1294,6 +1320,9 @@ export class Driver extends EventEmitter {
 		process.removeListener("exit", this._cleanupHandler);
 		process.removeListener("SIGINT", this._cleanupHandler);
 		process.removeListener("uncaughtException", this._cleanupHandler);
+
+		// destroy loggers as the very last thing
+		this.logContainer.destroy();
 	}
 
 	private serialport_onError(err: Error): void {
@@ -1353,12 +1382,6 @@ export class Driver extends EventEmitter {
 
 				// Assemble partial CCs on the driver level. Only forward complete messages to the send thread machine
 				if (!this.assemblePartialCCs(msg)) return;
-			} else if (isTransmitReport(msg) && msg.isOK()) {
-				// The node acknowledged a message so it must be awake - refresh its awake timer (GH#1068)
-				const node = msg.getNodeUnsafe();
-				if (node && node.supportsCC(CommandClasses["Wake Up"])) {
-					node.refreshAwakeTimer();
-				}
 			}
 
 			this.driverLog.logMessage(msg, { direction: "inbound" });
@@ -1415,7 +1438,11 @@ export class Driver extends EventEmitter {
 
 				case ZWaveErrorCodes.PacketFormat_InvalidPayload:
 					this.driverLog.print(
-						`Message with invalid data received. Dropping it:
+						`Dropping message with invalid data${
+							typeof e.context === "string"
+								? ` (Reason: ${e.context})`
+								: ""
+						}:
 0x${data.toString("hex")}`,
 						"warn",
 					);
@@ -1736,7 +1763,10 @@ ${handlers.length} left`,
 			if (!this.mayHandleUnsolicitedCommand(msg.command)) return;
 		}
 
-		if (msg instanceof ApplicationCommandRequest) {
+		if (
+			msg instanceof ApplicationCommandRequest ||
+			msg instanceof BridgeApplicationCommandRequest
+		) {
 			// we handle ApplicationCommandRequests differently because they are handled by the nodes directly
 			const nodeId = msg.command.nodeId;
 			// cannot handle ApplicationCommandRequests without a controller
@@ -1949,12 +1979,9 @@ ${handlers.length} left`,
 		let node: ZWaveNode | undefined;
 
 		// Don't send messages to dead nodes
-		if (
-			isNodeQuery(msg) ||
-			(isCommandClassContainer(msg) && !messageIsPing(msg))
-		) {
+		if (isNodeQuery(msg) || isCommandClassContainer(msg)) {
 			node = msg.getNodeUnsafe();
-			if (node?.status === NodeStatus.Dead) {
+			if (!messageIsPing(msg) && node?.status === NodeStatus.Dead) {
 				// Instead of throwing immediately, try to ping the node first - if it responds, continue
 				if (!(await node.ping())) {
 					throw new ZWaveError(
@@ -2055,12 +2082,12 @@ ${handlers.length} left`,
 			if (expirationTimeout) clearTimeout(expirationTimeout);
 			if (node) {
 				if (node.supportsCC(CommandClasses["Wake Up"])) {
-					// The node responded, refresh its awake timer
-					node.refreshAwakeTimer();
 					// If the node is not meant to be kept awake, try to send it back to sleep
 					if (!node.keepAwake) {
 						this.debounceSendNodeToSleep(node);
 					}
+					// The node must be awake because it answered
+					node.markAsAwake();
 				} else if (node.status !== NodeStatus.Alive) {
 					// The node status was unknown or dead - in either case it must be alive because it answered
 					node.markAsAlive();

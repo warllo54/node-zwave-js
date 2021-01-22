@@ -41,11 +41,27 @@ export enum BasicCommand {
 	Report = 0x03,
 }
 
-function getTargetValueValueId(endpoint?: number): ValueID {
+export function getTargetValueValueId(endpoint?: number): ValueID {
 	return {
 		commandClass: CommandClasses.Basic,
 		endpoint,
 		property: "targetValue",
+	};
+}
+
+export function getCurrentValueValueId(endpoint?: number): ValueID {
+	return {
+		commandClass: CommandClasses.Basic,
+		endpoint,
+		property: "currentValue",
+	};
+}
+
+export function getCompatEventValueId(endpoint?: number): ValueID {
+	return {
+		commandClass: CommandClasses.Basic,
+		endpoint,
+		property: "event",
 	};
 }
 
@@ -175,6 +191,17 @@ remaining duration: ${basicResponse.duration?.toString() ?? "undefined"}`;
 			},
 		);
 
+		// create compat event value if necessary
+		if (node.deviceConfig?.compat?.treatBasicSetAsEvent) {
+			const valueId = getCompatEventValueId(this.endpointIndex);
+			if (!node.valueDB.hasMetadata(valueId)) {
+				node.valueDB.setMetadata(valueId, {
+					...ValueMetadata.ReadOnlyUInt8,
+					label: "Event value",
+				});
+			}
+		}
+
 		// Remember that the interview is complete
 		this.interviewComplete = true;
 	}
@@ -272,7 +299,7 @@ export class BasicCCReport extends BasicCC {
 	private _duration: Duration | undefined;
 	@ccValue({ minVersion: 2 })
 	@ccValueMetadata({
-		...ValueMetadata.ReadOnly,
+		...ValueMetadata.ReadOnlyDuration,
 		label: "Remaining duration until target value",
 	})
 	public get duration(): Duration | undefined {

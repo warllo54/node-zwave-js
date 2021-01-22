@@ -192,7 +192,9 @@ export class MultilevelSwitchCCAPI extends CCAPI {
 						status === SupervisionStatus.Working ||
 						status === SupervisionStatus.Success
 					) {
-						void this.get().catch();
+						void this.get().catch(() => {
+							/* ignore */
+						});
 					}
 				},
 			},
@@ -567,7 +569,7 @@ export class MultilevelSwitchCCReport extends MultilevelSwitchCC {
 	private _duration: Duration | undefined;
 	@ccValue()
 	@ccValueMetadata({
-		...ValueMetadata.Any,
+		...ValueMetadata.Duration,
 		label: "Transition duration",
 	})
 	public get duration(): Duration | undefined {
