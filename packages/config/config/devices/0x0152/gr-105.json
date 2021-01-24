@@ -7,6 +7,14 @@
 	"description": "U-Fairy Control Valve",
 	"devices": [
 		{
+<<<<<<< HEAD
+=======
+			"productType": "0x0003",
+			"productId": "0x0512",
+			"zwaveAllianceId": 1537
+		},
+		{
+>>>>>>> zwave_alliance_files
 			"productType": "0x0202",
 			"productId": "0x0511",
 			"zwaveAllianceId": 1008
@@ -17,8 +25,16 @@
 		"max": "255.255"
 	},
 	"metadata": {
+<<<<<<< HEAD
 		"inclusion": "1. Follow the instructions for your Z-wave certified controller to include a device to the Z-wave network.2.Once the controller is ready to include your device, press the red button 3 times to include it in the Z-wave network.",
 		"exclusion": "1. Follow the instructions for your Z-wave certified controller to exclude a device to the Z-wave network.2.Once the controller is ready to exclude your device, press the red button 3 times to exclude it from the Z-wave network.",
 		"reset": "Press and hold the button 10 seconds and release the button. The device will send the reset notification to the list node in the group1 and erases the device memory , when the light flash it is resetting success.Note: This should only be used in the event your networks primary controller is missing or otherwise inoperable."
 	}
 }
+=======
+		"inclusion": "1. Follow the instructions for your Z-wave certified controller to include a device to the Z-wave network.\n2.Once the controller is ready to include your device, press the red button 3 times to include it in the Z-wave network.",
+		"exclusion": "1. Follow the instructions for your Z-wave certified controller to exclude a device to the Z-wave network.\n2.Once the controller is ready to exclude your device, press the red button 3 times to exclude it from the Z-wave network.",
+		"reset": "Press and hold the button 10 seconds and release the button. The device will send the reset notification to the list node in the group1 and erases the device memory , when the light flash it is resetting success.\nNote: This should only be used in the event your networks primary controller is missing or otherwise inoperable."
+	}
+}
+>>>>>>> zwave_alliance_files

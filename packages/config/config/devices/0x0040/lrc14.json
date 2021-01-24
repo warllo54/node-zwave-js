@@ -1,5 +1,9 @@
 // Novar Electrical Devices and Systems (EDS) LRC14
+<<<<<<< HEAD
 // Remote Control
+=======
+//  Remote Control
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Novar Electrical Devices and Systems (EDS)",
 	"manufacturerId": "0x0040",

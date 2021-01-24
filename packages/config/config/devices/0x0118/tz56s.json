@@ -1,5 +1,9 @@
 // TKB Home TZ56S
+<<<<<<< HEAD
 // TKB Switch
+=======
+// TKB Switch 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "TKB Home",
 	"manufacturerId": "0x0118",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

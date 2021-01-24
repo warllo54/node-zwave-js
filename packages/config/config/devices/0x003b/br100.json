@@ -1,5 +1,9 @@
 // Allegion BR100
+<<<<<<< HEAD
 // Nexia Bridge
+=======
+//  Nexia Bridge
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Allegion",
 	"manufacturerId": "0x003b",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

@@ -1,5 +1,9 @@
 // Merten MTN5051-0000
+<<<<<<< HEAD
 // Schneider - Merten
+=======
+// Schneider - Merten 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Merten",
 	"manufacturerId": "0x007a",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

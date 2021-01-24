@@ -1,5 +1,9 @@
 // ACT - Advanced Control Technologies ZRR150
+<<<<<<< HEAD
 // Relay Receptacle
+=======
+//  Relay Receptacle
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "ACT - Advanced Control Technologies",
 	"manufacturerId": "0x0001",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

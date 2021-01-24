@@ -9,7 +9,16 @@
 		{
 			"productType": "0x0001",
 			"productId": "0x0001",
+<<<<<<< HEAD
 			"zwaveAllianceId": [2311, 2329, 2386, 2387]
+=======
+			"zwaveAllianceId": [
+				2311,
+				2329,
+				2386,
+				2387
+			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
@@ -17,6 +26,12 @@
 		"max": "255.255"
 	},
 	"metadata": {
+<<<<<<< HEAD
 		"reset": "Restoring factory settings returns your Z-Wave Plus Extender to its default settings and removes Z-Wave device definitions.Please use this procedure only when the network primary controller is missing or otherwise inoperable.To restore factory settings:1.Tap . The main menu appears.2.Tap Settings. The Settings menu appears.Tap Z-Wave. The Z-Wave screen appears.Tap Reset to Factory."
 	}
 }
+=======
+		"reset": "Restoring factory settings returns your Z-Wave Plus Extender to its default settings and removes Z-Wave device definitions.\r\nPlease use this procedure only when the network primary controller is missing or otherwise inoperable.\r\nTo restore factory settings:\r\n1.\tTap  . The main menu appears.\r\n2.\tTap Settings. The Settings menu appears.\r\nTap Z-Wave. The Z-Wave screen appears.\r\nTap Reset to Factory."
+	}
+}
+>>>>>>> zwave_alliance_files

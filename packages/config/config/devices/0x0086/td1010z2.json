@@ -1,10 +1,18 @@
 // AEON Labs TD1010Z2
+<<<<<<< HEAD
 // Goodway (Lamp Dimmer-USA) 2/5
+=======
+// Goodway  (Lamp Dimmer-USA) 2/5
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "AEON Labs",
 	"manufacturerId": "0x0086",
 	"label": "TD1010Z2",
+<<<<<<< HEAD
 	"description": "Goodway (Lamp Dimmer-USA) 2/5",
+=======
+	"description": "Goodway  (Lamp Dimmer-USA) 2/5",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x0000",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

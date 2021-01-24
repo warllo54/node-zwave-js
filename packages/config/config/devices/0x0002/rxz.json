@@ -1,10 +1,18 @@
 // Danfoss RXZ
+<<<<<<< HEAD
 // - RF Relay switching unit
+=======
+//  - RF Relay switching unit
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Danfoss",
 	"manufacturerId": "0x0002",
 	"label": "RXZ",
+<<<<<<< HEAD
 	"description": "RF Relay switching unit",
+=======
+	"description": "- RF Relay switching unit",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x8004",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

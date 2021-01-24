@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // Ilevia srl ZWEVE-USB-0001
+=======
+// Ilevia srl  ZWEVE-USB-0001
+>>>>>>> zwave_alliance_files
 // ZWEVEUSB
 {
 	"manufacturer": "Ilevia srl",
@@ -19,4 +23,8 @@
 	"metadata": {
 		"reset": "The host software controls how to reset it"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

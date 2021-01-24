@@ -1,5 +1,9 @@
 // WeBeHome AB HG2
+<<<<<<< HEAD
 // WeBeHome gateway
+=======
+// WeBeHome gateway 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "WeBeHome AB",
 	"manufacturerId": "0x0171",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

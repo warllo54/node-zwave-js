@@ -9,11 +9,23 @@
 		{
 			"productType": "0x0202",
 			"productId": "0x0611",
+<<<<<<< HEAD
 			"zwaveAllianceId": [908, 909, 910]
+=======
+			"zwaveAllianceId": [
+				908,
+				909,
+				910
+			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

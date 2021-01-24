@@ -1,5 +1,9 @@
 // Everspring TAC06-JOEL
+<<<<<<< HEAD
 // Door Bell Pushbutton
+=======
+//  Door Bell Pushbutton
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Everspring",
 	"manufacturerId": "0x0060",

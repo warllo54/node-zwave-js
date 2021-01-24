@@ -21,4 +21,8 @@
 		"exclusion": "Put your HUB in exclusion mode and press the manual button three (3) times.",
 		"reset": "Please use a certified controller to remove the device from your network to factory default. Or, to manually remove your device, hold down the button for 5 seconds. Only use this procedure in the event that the network primary controller is missing or otherwise inoperable."
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

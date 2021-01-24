@@ -1,5 +1,9 @@
 // Remotec BW8030
+<<<<<<< HEAD
 // ZTS-100US Thermostat
+=======
+// ZTS-100US Thermostat 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Remotec",
 	"manufacturerId": "0x5254",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

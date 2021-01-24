@@ -17,6 +17,10 @@
 		"max": "255.255"
 	},
 	"metadata": {
+<<<<<<< HEAD
 		"reset": "Web Interface; Network Tab, \"Reset Controller\""
+=======
+		"reset": "Web Interface; Network Tab, \"\"Reset Controller\"\""
+>>>>>>> zwave_alliance_files
 	}
 }

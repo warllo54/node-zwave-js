@@ -1,5 +1,9 @@
 // GE/Jasco 45652
+<<<<<<< HEAD
 // GE Energy Monitoring Lamp Module
+=======
+// GE Energy Monitoring Lamp Module 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "GE/Jasco",
 	"manufacturerId": "0x0063",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

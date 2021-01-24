@@ -1,5 +1,9 @@
 // Lexel JTB-1007-02
+<<<<<<< HEAD
 // Curtain Motor
+=======
+//  Curtain Motor
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Lexel",
 	"manufacturerId": "0x0015",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

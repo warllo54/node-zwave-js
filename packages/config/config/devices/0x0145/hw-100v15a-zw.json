@@ -1,5 +1,9 @@
 // Buffalo Inc. HW-100V15A-ZW
+<<<<<<< HEAD
 // Buffalo
+=======
+// Buffalo 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Buffalo Inc.",
 	"manufacturerId": "0x0145",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

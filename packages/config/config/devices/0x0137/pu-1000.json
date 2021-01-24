@@ -1,5 +1,9 @@
 // FollowGood Technology Company Ltd. PU-1000
+<<<<<<< HEAD
 // Gateway
+=======
+// Gateway 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "FollowGood Technology Company Ltd.",
 	"manufacturerId": "0x0137",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

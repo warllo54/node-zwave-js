@@ -1,9 +1,17 @@
+<<<<<<< HEAD
 // GE/Jasco 45607 / ZW3002
+=======
+// GE/Jasco 45607 /  ZW3002
+>>>>>>> zwave_alliance_files
 // In-Wall Decora Style Incandescent Light Dimmer, No Neutral, White, (Included Only in 45613 kit)
 {
 	"manufacturer": "GE/Jasco",
 	"manufacturerId": "0x0063",
+<<<<<<< HEAD
 	"label": "45607 / ZW3002",
+=======
+	"label": "45607 /  ZW3002",
+>>>>>>> zwave_alliance_files
 	"description": "In-Wall Decora Style Incandescent Light Dimmer, No Neutral, White, (Included Only in 45613 kit)",
 	"devices": [
 		{
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

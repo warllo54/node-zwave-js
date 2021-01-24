@@ -1,5 +1,9 @@
 // Tronico Technology Co. Ltd. DA065
+<<<<<<< HEAD
 // Binary Switch
+=======
+//  Binary Switch
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Tronico Technology Co. Ltd.",
 	"manufacturerId": "0x0111",

@@ -1,5 +1,9 @@
 // Honeywell TH8320ZW1026
+<<<<<<< HEAD
 // Honeywell - Opower
+=======
+// Honeywell - Opower 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Honeywell",
 	"manufacturerId": "0x0039",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

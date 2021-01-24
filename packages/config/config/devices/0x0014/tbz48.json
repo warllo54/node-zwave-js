@@ -1,10 +1,18 @@
 // Cyberhouse TBZ48
+<<<<<<< HEAD
 // Linear Thermostat
+=======
+// Linear  Thermostat
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Cyberhouse",
 	"manufacturerId": "0x0014",
 	"label": "TBZ48",
+<<<<<<< HEAD
 	"description": "Linear Thermostat",
+=======
+	"description": "Linear  Thermostat",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x5442",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

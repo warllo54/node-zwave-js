@@ -7,8 +7,13 @@
 	"description": "Sensor Gateway",
 	"devices": [
 		{
+<<<<<<< HEAD
 			"productType": "0x0001",
 			"productId": "0x0001",
+=======
+			"productType": "0x0x01",
+			"productId": "0x0x01",
+>>>>>>> zwave_alliance_files
 			"zwaveAllianceId": 1759
 		}
 	],
@@ -17,6 +22,12 @@
 		"max": "255.255"
 	},
 	"metadata": {
+<<<<<<< HEAD
 		"reset": "Push the hardware reset button.\"Please use this procedure only when the network primary controller is missing or otherwise inoperable.\""
 	}
 }
+=======
+		"reset": "Push the hardware reset button.\r\n\r\n\"\"Please use this procedure only when the network primary controller is missing or otherwise inoperable.\"\""
+	}
+}
+>>>>>>> zwave_alliance_files

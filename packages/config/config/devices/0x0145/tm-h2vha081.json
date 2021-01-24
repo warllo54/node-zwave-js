@@ -1,10 +1,18 @@
 // Buffalo Inc. TM-H2VHA081
+<<<<<<< HEAD
 // Buffalo Switch
+=======
+// Buffalo  Switch
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Buffalo Inc.",
 	"manufacturerId": "0x0145",
 	"label": "TM-H2VHA081",
+<<<<<<< HEAD
 	"description": "Buffalo Switch",
+=======
+	"description": "Buffalo  Switch",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x0002",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

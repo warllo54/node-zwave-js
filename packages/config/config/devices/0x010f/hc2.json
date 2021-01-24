@@ -1,5 +1,9 @@
 // Fibargroup HC2
+<<<<<<< HEAD
 // FIBARO
+=======
+// FIBARO 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Fibargroup",
 	"manufacturerId": "0x010f",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

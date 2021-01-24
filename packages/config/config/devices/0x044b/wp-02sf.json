@@ -1,7 +1,13 @@
+<<<<<<< HEAD
 // Dongguan Will Power WP-02SF
 // Z-Wave Touchable Smart Valve
 {
 	"manufacturer": "Dongguan Will Power",
+=======
+// undefined WP-02SF
+// Z-Wave Touchable Smart Valve
+{
+>>>>>>> zwave_alliance_files
 	"manufacturerId": "0x044b",
 	"label": "WP-02SF",
 	"description": "Z-Wave Touchable Smart Valve",
@@ -18,7 +24,14 @@
 	},
 	"metadata": {
 		"inclusion": "Add：It will trigger ADD/REMOVE after press the OPEN button for more than 5seconds. Try again if failed. Notice: The triggering will be activated after the PRESS stopped.",
+<<<<<<< HEAD
 		"exclusion": "B.Remove：It will trigger ADD/REMOVE after press the OPEN button for more than 5 seconds. Try again if failed. Notice: The triggering will be activated after the PRESS stopped.",
 		"reset": "Support Device Locally ResetPlease use this procedure only when the network primary controller is missing or otherwise inoperable."
 	}
 }
+=======
+		"exclusion": "B.\tRemove：It will trigger ADD/REMOVE after press the OPEN button for more than 5 seconds. Try again if failed. Notice: The triggering will be activated after the PRESS stopped.",
+		"reset": "Support Device Locally Reset\r\nPlease use this procedure only when the network primary controller is missing or otherwise inoperable."
+	}
+}
+>>>>>>> zwave_alliance_files

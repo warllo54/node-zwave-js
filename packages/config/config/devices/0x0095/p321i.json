@@ -1,10 +1,18 @@
 // Qees P321I
+<<<<<<< HEAD
 // QEES MyKey Remote US
+=======
+// QEES  MyKey Remote US
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Qees",
 	"manufacturerId": "0x0095",
 	"label": "P321I",
+<<<<<<< HEAD
 	"description": "QEES MyKey Remote US",
+=======
+	"description": "QEES  MyKey Remote US",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x3201",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

@@ -1,10 +1,18 @@
 // Merten 5046XX
+<<<<<<< HEAD
 // 5046xx - Radio sensor cover for in wall dimmer
+=======
+// 5046xx -  Radio sensor cover for in wall dimmer
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Merten",
 	"manufacturerId": "0x007a",
 	"label": "5046XX",
+<<<<<<< HEAD
 	"description": "5046xx - Radio sensor cover for in wall dimmer",
+=======
+	"description": "5046xx -  Radio sensor cover for in wall dimmer",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x4003",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files
