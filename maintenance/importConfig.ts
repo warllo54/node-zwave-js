@@ -99,8 +99,12 @@ const ozwTarUrl =
 const ozwConfigFolder = path.join(ozwTempDir, "./config");
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //const zwaTempDir = path.join(__dirname, "../.tmpzwa");
 const zwaTempDir = "/Users/blhoward2/Desktop/node/tmpzwa";
+=======
+const zwaTempDir = path.join(__dirname, "../.tmpzwa");
+>>>>>>> parent of 11ac6cb3... feat: change source dir
 const zwaConfigFolder = path.join(zwaTempDir, "./config");
 
 =======
