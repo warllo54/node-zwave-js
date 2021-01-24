@@ -755,6 +755,9 @@ async function parseZWAFiles(): Promise<void> {
 	// Combine provided files within models
 	jsonData = combineDeviceFiles(jsonData);
 
+	// Sanitize text fields for all files we'll use
+	jsonData = sanitizeFields(jsonData);
+
 	// Load our existing config files to cross-reference
 	await configManager.loadManufacturers();
 	if (program.devices) {
@@ -1005,6 +1008,62 @@ function combineDeviceFiles(json: Array<object>) {
 			}
 		}
 		return false;
+	}
+	return json;
+}
+
+/***
+ * Combine zWave Alliance Device Files
+ */
+function sanitizeFields(json: Array<object>) {
+	for (const file of json) {
+		if (file.ProductId) {
+			file.Identifier = file.Identifier
+				? sanitizeString(file.Identifier)
+				: "";
+			file.Brand = file.Brand ? sanitizeString(file.Brand) : "";
+		}
+		if (file.AssociationGroups) {
+			for (const assoc of file.AssociationGroups) {
+				assoc.Description = assoc.Description
+					? sanitizeString(assoc.Description)
+					: "";
+				assoc.group_name = assoc.group_name
+					? sanitizeString(assoc.group_name)
+					: "";
+			}
+		}
+		if (file.ConfigurationParameters) {
+			for (const param of file.ConfigurationParameters) {
+				param.Name = param.Name ? sanitizeString(param.Name) : "";
+				param.Name = param.Name ? param.Name.replace(/\.\"/g, '"') : "";
+				param.Name = param.Name
+					? param.Name.replace(/[\,\.\:]$/, '"')
+					: "";
+				param.Name = param.Name ? param.Name.replace(/\:\"/g, '"') : "";
+				param.Description = param.Description
+					? sanitizeString(param.Description)
+					: "";
+				if (param.ConfigurationParameterValues) {
+					for (const value of param.ConfigurationParameterValues) {
+						value.Description = value.Description
+							? sanitizeString(value.Description)
+							: "";
+						value.Description = value.Description
+							? value.Description.replace(/[\,\.\:]$/, '"')
+							: "";
+					}
+				}
+			}
+		}
+		if (file.Texts) {
+			for (const text of file.Texts) {
+				text.description = text.description
+					? sanitizeString(text.description)
+					: "";
+				text.value = text.value ? sanitizeString(text.value) : "";
+			}
+		}
 	}
 	return json;
 }
@@ -1379,10 +1438,10 @@ async function parseZWAProduct(
 		newConfig.associations = newAssociations;
 	}
 
-	// TEMP -- only process no param files
+	// TEMP -- skip no param files
 	if (
-		Object.keys(newConfig.paramInformation).length > 0 ||
-		Object.keys(newConfig.associations).length > 0
+		Object.keys(newConfig.paramInformation).length === 0 ||
+		Object.keys(newConfig.associations).length === 0
 	) {
 		return;
 	}
@@ -1729,6 +1788,28 @@ function normalizeIdentifier(originalIdentifier: string) {
 	return [newIdentifier, originalIdentifier];
 }
 
+/****************************************************************************
+ *                   Sanitize String function                             *
+ * Strips out common mistakes in strings							        *
+ * 																			*
+ ****************************************************************************/
+function sanitizeString(originalString: string) {
+	originalString = originalString.replace(/\r\n/g, " ");
+	originalString = originalString.replace(/\n/g, " ");
+	originalString = originalString.replace(/\r/g, " ");
+	originalString = originalString.replace(/\t/g, " ");
+	originalString = originalString.replace(/\\"\\"/g, '\\"');
+	originalString = originalString.replace(/      /g, " ");
+	originalString = originalString.replace(/     /g, " ");
+	originalString = originalString.replace(/    /g, " ");
+	originalString = originalString.replace(/   /g, " ");
+	originalString = originalString.replace(/  /g, " ");
+	originalString = originalString.replace(/\,s*$/g, "");
+	originalString = originalString.replace(/\.s*$/g, "");
+	originalString = originalString.replace(/\:s*$/g, "");
+	originalString = originalString.trim();
+	return originalString;
+}
 /****************************************************************************
  *                   Parameter Comparison function                          *
  * Compare two sets of parameters and return true if the numbers match      *
