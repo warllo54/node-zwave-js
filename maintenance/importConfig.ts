@@ -98,17 +98,6 @@ const ozwTarUrl =
 	"https://github.com/OpenZWave/open-zwave/archive/master.tar.gz";
 const ozwConfigFolder = path.join(ozwTempDir, "./config");
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-//const zwaTempDir = path.join(__dirname, "../.tmpzwa");
-const zwaTempDir = "/Users/blhoward2/Desktop/node/tmpzwa";
-=======
-const zwaTempDir = path.join(__dirname, "../.tmpzwa");
->>>>>>> parent of 11ac6cb3... feat: change source dir
-const zwaConfigFolder = path.join(zwaTempDir, "./config");
-
-=======
->>>>>>> parent of aaf06e7e... feat: add improvements
 const ohTempDir = path.join(__dirname, "../.tmpoh");
 const importedManufacturersPath = path.join(ohTempDir, "manufacturers.json");
 
