@@ -98,7 +98,8 @@ const ozwTarUrl =
 	"https://github.com/OpenZWave/open-zwave/archive/master.tar.gz";
 const ozwConfigFolder = path.join(ozwTempDir, "./config");
 
-const zwaTempDir = path.join(__dirname, "../.tmpzwa");
+//const zwaTempDir = path.join(__dirname, "../.tmpzwa");
+const zwaTempDir = "/Users/blhoward2/Desktop/node/tmpzwa";
 const zwaConfigFolder = path.join(zwaTempDir, "./config");
 
 const ohTempDir = path.join(__dirname, "../.tmpoh");
