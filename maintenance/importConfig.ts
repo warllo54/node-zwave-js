@@ -773,9 +773,6 @@ async function parseZWAFiles(): Promise<void> {
 
 		// Add the manufacturer to our manufacturers.json if it is missing
 		if (isNaN(manufacturerId)) {
-			console.log(
-				`Skipping file ${file.Id}.json due to missing manufacturerId`,
-			);
 		} else if (manufacturerName === undefined && file.Brand !== undefined) {
 			console.log(`Adding missing manufacturer: ${file.Brand}`);
 			configManager.setManufacturer(manufacturerId, file.Brand);
@@ -1126,10 +1123,14 @@ async function parseZWAProduct(
 	// Load the existing config so we can merge it with the updated information
 	let existingDevice: Record<string, any> | undefined;
 
-	if (await fs.pathExists(fileNameAbsolute)) {
-		existingDevice = JSON5.parse(
-			await fs.readFile(fileNameAbsolute, "utf8"),
-		);
+	try {
+		if (await fs.pathExists(fileNameAbsolute)) {
+			existingDevice = JSON5.parse(
+				await fs.readFile(fileNameAbsolute, "utf8"),
+			);
+		}
+	} catch (e) {
+		console.log("Error processing: " + fileNameAbsolute + " - " + e);
 	}
 
 	/********************************
@@ -1469,6 +1470,19 @@ ${stringify(normalizeConfig(newConfig), "\t")}`;
 	await fs.writeFile(fileNameAbsolute, output, "utf8");
 }
 
+async function indexZWAFiles(): Promise<void> {
+	// Parse json files in the zwaTempDir
+	let jsonData = [];
+
+	const configFiles = await enumFilesRecursive(processedDir, (file) =>
+		file.endsWith(".json"),
+	);
+
+	for (const file of configFiles) {
+		const j = await fs.readFile(file, "utf8");
+	}
+}
+
 /**
  * Downloads all device information
  * @param IDs If given, only these IDs are downloaded
@@ -1740,22 +1754,30 @@ function normalizeIdentifier(originalIdentifier: string) {
 	// Cleanup current Identifier and store in case of later duplicate files
 	let newIdentifier = originalIdentifier;
 
-	const suffixToRemove = [
+	const country_codes = [
+		"(US)",
 		"us",
 		"US",
-		"(US)",
+		"(EU)",
 		"eu",
 		"EU",
-		"(EU)",
+		"(RU)",
 		"ru",
 		"RU",
-		"(RU)",
+		"(AU)",
 		"au",
 		"AU",
-		"(AU)",
+		"(CM)",
 		"cm",
 		"CM",
-		"(CM)",
+	];
+
+	for (const code of country_codes) {
+		const regex = new RegExp(code, "g");
+		newIdentifier = newIdentifier.replace(regex, "");
+	}
+
+	const suffixToRemove = [
 		"-1",
 		"-2",
 		"-3",
@@ -1769,6 +1791,10 @@ function normalizeIdentifier(originalIdentifier: string) {
 		"d",
 		"D",
 		"e",
+		"i",
+		"I",
+		"j",
+		"J",
 	];
 	for (const suffix of suffixToRemove) {
 		if (newIdentifier.slice(-suffix.length) == suffix) {
@@ -1784,6 +1810,7 @@ function normalizeIdentifier(originalIdentifier: string) {
 			break;
 		}
 	}
+	newIdentifier = newIdentifier.trim();
 	newIdentifier = newIdentifier.toLocaleUpperCase();
 	return [newIdentifier, originalIdentifier];
 }

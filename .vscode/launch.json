@@ -18,7 +18,7 @@
 				"ts-node/register/transpile-only",
 				"-r",
 				"tsconfig-paths/register",
-				"${workspaceFolder}/maintenance/importConfig.ts"
+				"${workspaceFolder}/maintenance/importConfig.ts",
 				"-dm -s zwa"
 			],
 			"console": "integratedTerminal",
