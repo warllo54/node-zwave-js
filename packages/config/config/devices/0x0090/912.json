@@ -1,10 +1,18 @@
 // Kwikset 912
+<<<<<<< HEAD
+// Kwikset Door Lock for U.S.
+=======
 // Kwikset  Door Lock for U.S.
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Kwikset",
 	"manufacturerId": "0x0090",
 	"label": "912",
+<<<<<<< HEAD
+	"description": "Kwikset Door Lock for U.S.",
+=======
 	"description": "Kwikset  Door Lock for U.S.",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x0001",

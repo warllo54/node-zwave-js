@@ -1,5 +1,9 @@
 // Honeywell L5100
+<<<<<<< HEAD
+// Honeywell Lynx Touch
+=======
 // Honeywell Lynx Touch 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Honeywell",
 	"manufacturerId": "0x0039",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

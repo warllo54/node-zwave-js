@@ -1,5 +1,9 @@
 // HiTech Automation 9600801000
+<<<<<<< HEAD
+// EbV floor heating regulator
+=======
 // EbV floor heating regulator 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "HiTech Automation",
 	"manufacturerId": "0x0017",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

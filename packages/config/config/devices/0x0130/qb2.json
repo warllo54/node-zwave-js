@@ -1,10 +1,18 @@
 // Quby QB2
+<<<<<<< HEAD
+// Quby Energy Display
+=======
 // Quby  Energy Display
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Quby",
 	"manufacturerId": "0x0130",
 	"label": "QB2",
+<<<<<<< HEAD
+	"description": "Quby Energy Display",
+=======
 	"description": "Quby  Energy Display",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x0001",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

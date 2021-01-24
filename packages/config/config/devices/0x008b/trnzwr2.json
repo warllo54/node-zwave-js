@@ -1,10 +1,18 @@
 // Trane Corporation TRNZWR2
+<<<<<<< HEAD
+// Trane Z WAVE Mini Split Remote control - ANZ,
+=======
 // Trane Z WAVE Mini Split Remote control - ANZ, 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Trane Corporation",
 	"manufacturerId": "0x008b",
 	"label": "TRNZWR2",
+<<<<<<< HEAD
+	"description": "Trane Z WAVE Mini Split Remote control - ANZ",
+=======
 	"description": "Trane Z WAVE Mini Split Remote control - ANZ,",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x4d53",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

@@ -9,12 +9,16 @@
 		{
 			"productType": "0x0002",
 			"productId": "0x0001",
+<<<<<<< HEAD
+			"zwaveAllianceId": [999, 1037, 1038]
+=======
 			"zwaveAllianceId": [1037, 1038]
 		},
 		{
 			"productType": "0x0002",
 			"productId": "0x0001",
 			"zwaveAllianceId": 999
+>>>>>>> zwave_alliance_files
 		},
 		{
 			"productType": "0x0002",

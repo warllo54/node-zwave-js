@@ -1,5 +1,9 @@
 // Z-Wave.Me ZME_UZB1
+<<<<<<< HEAD
+// USB Z-Wave Mini Adapter
+=======
 // USB Z-Wave Mini Adapter 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Z-Wave.Me",
 	"manufacturerId": "0x0115",
@@ -19,4 +23,8 @@
 	"metadata": {
 		"reset": "n/a"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

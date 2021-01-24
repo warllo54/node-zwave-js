@@ -9,12 +9,16 @@
 		{
 			"productType": "0x0002",
 			"productId": "0x0001",
+<<<<<<< HEAD
+			"zwaveAllianceId": [1641, 1915, 2113, 2384]
+=======
 			"zwaveAllianceId": [
 				1641,
 				1915,
 				2113,
 				2384
 			]
+>>>>>>> zwave_alliance_files
 		},
 		{
 			"productType": "0x0002",
@@ -27,6 +31,12 @@
 		"max": "255.255"
 	},
 	"metadata": {
+<<<<<<< HEAD
+		"reset": "-Run ‘ZW_SET_DEFAULT’ in Setting, then click YES of UZB PoP UP"
+	}
+}
+=======
 		"reset": "-\tRun ‘ZW_SET_DEFAULT’ in Setting, then click YES of UZB PoP UP"
 	}
 }
+>>>>>>> zwave_alliance_files

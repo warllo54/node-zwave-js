@@ -1,10 +1,18 @@
 // Residential Control Systems, Inc. (RCS) PSCH21
+<<<<<<< HEAD
+// RCS Pool Controller
+=======
 // RCS  Pool Controller
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Residential Control Systems, Inc. (RCS)",
 	"manufacturerId": "0x0010",
 	"label": "PSCH21",
+<<<<<<< HEAD
+	"description": "RCS Pool Controller",
+=======
 	"description": "RCS  Pool Controller",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x5053",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

@@ -13,12 +13,16 @@
 		{
 			"productType": "0x2006",
 			"productId": "0x0622",
+<<<<<<< HEAD
+			"zwaveAllianceId": [981, 982, 983, 984]
+=======
 			"zwaveAllianceId": [
 				981,
 				982,
 				983,
 				984
 			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {

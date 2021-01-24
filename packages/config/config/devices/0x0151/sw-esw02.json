@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+// Sercomm Corp SW-ESW02
+=======
 // Sercomm Corp SW-ESW02 
+>>>>>>> zwave_alliance_files
 // Energy switch
 {
 	"manufacturer": "Sercomm Corp",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

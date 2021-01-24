@@ -1,10 +1,18 @@
 // ACT - Advanced Control Technologies ZDW104
+<<<<<<< HEAD
+// - Wall Mounted Dimmer
+=======
 //  - Wall Mounted Dimmer
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "ACT - Advanced Control Technologies",
 	"manufacturerId": "0x0001",
 	"label": "ZDW104",
+<<<<<<< HEAD
+	"description": "Wall Mounted Dimmer",
+=======
 	"description": "- Wall Mounted Dimmer",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x4457",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

@@ -1,5 +1,9 @@
 // Electronic Solutions FG IMS
+<<<<<<< HEAD
+// US 115V
+=======
 //  US 115V
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Electronic Solutions",
 	"manufacturerId": "0x0033",
@@ -9,14 +13,22 @@
 		{
 			"productType": "0x4647",
 			"productId": "0x0001",
+<<<<<<< HEAD
+			"zwaveAllianceId": [306, 307]
+=======
 			"zwaveAllianceId": [
 				306,
 				307
 			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

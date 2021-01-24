@@ -9,10 +9,14 @@
 		{
 			"productType": "0x0005",
 			"productId": "0x0002",
+<<<<<<< HEAD
+			"zwaveAllianceId": [1244, 1252]
+=======
 			"zwaveAllianceId": [
 				1244,
 				1252
 			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
@@ -22,4 +26,8 @@
 	"metadata": {
 		"reset": "Use the SerialAPI"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

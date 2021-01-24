@@ -1,5 +1,9 @@
 // Danfoss 014G0804
+<<<<<<< HEAD
+// Genius Valve
+=======
 // Genius Valve 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Danfoss",
 	"manufacturerId": "0x0002",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

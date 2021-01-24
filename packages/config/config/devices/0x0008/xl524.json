@@ -1,10 +1,18 @@
 // Wayne Dalton XL524
+<<<<<<< HEAD
+// RCS Thermostat
+=======
 // RCS  Thermostat
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Wayne Dalton",
 	"manufacturerId": "0x0008",
 	"label": "XL524",
+<<<<<<< HEAD
+	"description": "RCS Thermostat",
+=======
 	"description": "RCS  Thermostat",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x5452",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

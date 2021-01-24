@@ -1,10 +1,18 @@
 // Axesstel Inc AX140
+<<<<<<< HEAD
+// Axesstel Alert System
+=======
 // Axesstel  Alert System
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Axesstel Inc",
 	"manufacturerId": "0x0146",
 	"label": "AX140",
+<<<<<<< HEAD
+	"description": "Axesstel Alert System",
+=======
 	"description": "Axesstel  Alert System",
+>>>>>>> zwave_alliance_files
 	"devices": [
 		{
 			"productType": "0x0001",
@@ -16,4 +24,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

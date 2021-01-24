@@ -1,5 +1,9 @@
 // HomeScenario HSK-100Z
+<<<<<<< HEAD
+// AV Scenario Controller with universal IR
+=======
 // AV Scenario Controller with universal IR 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "HomeScenario",
 	"manufacturerId": "0x0162",
@@ -9,14 +13,22 @@
 		{
 			"productType": "0x0001",
 			"productId": "0x03e9",
+<<<<<<< HEAD
+			"zwaveAllianceId": [131, 148]
+=======
 			"zwaveAllianceId": [
 				131,
 				148
 			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

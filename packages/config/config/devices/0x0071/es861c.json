@@ -1,5 +1,9 @@
 // LS Control ES861C
+<<<<<<< HEAD
+// Setpoint sensor
+=======
 //  Setpoint sensor
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "LS Control",
 	"manufacturerId": "0x0071",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

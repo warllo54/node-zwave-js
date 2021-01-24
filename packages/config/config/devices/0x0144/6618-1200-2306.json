@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+// Applied Micro Electronics"AME" BV 6618-1200-2306
+=======
 // Applied Micro Electronics "AME" BV 6618-1200-2306
+>>>>>>> zwave_alliance_files
 // AME Qbox
 {
 	"manufacturer": "Applied Micro Electronics \"AME\" BV",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

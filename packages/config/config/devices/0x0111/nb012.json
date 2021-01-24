@@ -1,5 +1,9 @@
 // Tronico Technology Co. Ltd. NB012
+<<<<<<< HEAD
+// Switch-Dimmer
+=======
 //  Switch-Dimmer
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "Tronico Technology Co. Ltd.",
 	"manufacturerId": "0x0111",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

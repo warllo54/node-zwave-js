@@ -9,15 +9,23 @@
 		{
 			"productType": "0x0804",
 			"productId": "0x2000",
+<<<<<<< HEAD
+			"zwaveAllianceId": [693, 699, 700]
+=======
 			"zwaveAllianceId": [
 				693,
 				699,
 				700
 			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

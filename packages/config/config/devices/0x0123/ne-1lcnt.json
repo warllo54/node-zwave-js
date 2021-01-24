@@ -1,5 +1,9 @@
 // IWATSU NE-1LCNT
+<<<<<<< HEAD
+// Iwatsu
+=======
 // Iwatsu 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "IWATSU",
 	"manufacturerId": "0x0123",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

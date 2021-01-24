@@ -9,6 +9,9 @@
 		{
 			"productType": "0x3001",
 			"productId": "0x0301",
+<<<<<<< HEAD
+			"zwaveAllianceId": [942, 943, 985, 986, 995]
+=======
 			"zwaveAllianceId": [
 				942,
 				943,
@@ -16,10 +19,15 @@
 				986,
 				995
 			]
+>>>>>>> zwave_alliance_files
 		}
 	],
 	"firmwareVersion": {
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files

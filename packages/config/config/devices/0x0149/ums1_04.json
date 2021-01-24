@@ -1,5 +1,9 @@
 // wiDom UMS1.04
+<<<<<<< HEAD
+// wiDom Universal Roller Shutter
+=======
 // wiDom Universal Roller Shutter 
+>>>>>>> zwave_alliance_files
 {
 	"manufacturer": "wiDom",
 	"manufacturerId": "0x0149",
@@ -16,4 +20,8 @@
 		"min": "0.0",
 		"max": "255.255"
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> zwave_alliance_files
