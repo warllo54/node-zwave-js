@@ -67,6 +67,12 @@ const program = yargs
 		type: "boolean",
 		default: false,
 	})
+	.option("parse", {
+		alias: "p",
+		description: "Run custom parse routines -- maintenance",
+		type: "boolean",
+		default: false,
+	})
 	.example(
 		"import -s ozw -Dmd",
 		"Download and parse OpenZwave db (manufacturers, devices) and update the index",
@@ -1480,6 +1486,58 @@ async function indexZWAFiles(): Promise<void> {
 
 	for (const file of configFiles) {
 		const j = await fs.readFile(file, "utf8");
+		jsonData.push(JSON.parse(j));
+	}
+}
+
+async function maintenanceParse(): Promise<void> {
+	// Parse json files in the zwaTempDir
+	let zwaData = [];
+
+	// Load the zwa files
+	const zwaFiles = await enumFilesRecursive(zwaTempDir, (file) =>
+		file.endsWith(".json"),
+	);
+	for (const file of zwaFiles) {
+		const j = await fs.readFile(file, "utf8");
+
+		/**
+		 * zWave Alliance numbering isn't always continuous and an html page is 
+		returned when a device number doesn't. Test for and delete such files.
+		 */
+		if (j.charAt(0) === "{") {
+			zwaData.push(JSON.parse(j));
+		} else {
+			void fs.unlink(file);
+		}
+	}
+
+	// Build the list of device files
+	const configFiles = await enumFilesRecursive(processedDir, (file) =>
+		file.endsWith(".json"),
+	);
+	for (const file of configFiles) {
+		const j = await fs.readFile(file, "utf8");
+
+		let jsonData;
+		try {
+			jsonData = JSON5.parse(j);
+		} catch (e) {
+			console.log("Error processing: " + file + " - " + e);
+		}
+
+		let includedZwaFiles = [];
+
+		for (const device of jsonData.devices) {
+			if (Array.isArray(device.zwaveAllianceId)) {
+				includedZwaFiles = includedZwaFiles.concat(
+					device.zwaveAllianceId,
+				);
+			} else {
+				includedZwaFiles.push(device.zwaveAllianceId);
+				console.log();
+			}
+		}
 	}
 }
 
@@ -1997,6 +2055,10 @@ void (async () => {
 			if (program.devices) {
 				await importConfigFiles();
 			}
+		}
+
+		if (program.parse) {
+			await maintenanceParse();
 		}
 	}
 })();
