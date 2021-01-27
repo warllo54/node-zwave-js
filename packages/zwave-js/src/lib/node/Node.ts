@@ -36,7 +36,11 @@ import { padStart } from "alcalzone-shared/strings";
 import { isArray, isObject } from "alcalzone-shared/typeguards";
 import { randomBytes } from "crypto";
 import { EventEmitter } from "events";
-import { CCAPI, ignoreTimeout } from "../commandclass/API";
+import {
+	CCAPI,
+	ignoreTimeout,
+	PollValueImplementation,
+} from "../commandclass/API";
 import { getHasLifelineValueId } from "../commandclass/AssociationCC";
 import {
 	BasicCC,
@@ -175,11 +179,13 @@ export class ZWaveNode extends Endpoint {
 		deviceClass?: DeviceClass,
 		supportedCCs: CommandClasses[] = [],
 		controlledCCs: CommandClasses[] = [],
+		valueDB?: ValueDB,
 	) {
 		// Define this node's intrinsic endpoint as the root device (0)
 		super(id, driver, 0);
 
-		this._valueDB = new ValueDB(id, driver.valueDB!, driver.metadataDB!);
+		this._valueDB =
+			valueDB ?? new ValueDB(id, driver.valueDB!, driver.metadataDB!);
 		for (const event of [
 			"value added",
 			"value updated",
@@ -699,6 +705,44 @@ export class ZWaveNode extends Endpoint {
 			}
 			throw e;
 		}
+	}
+
+	/**
+	 * Requests a value for a given property of a given CommandClass by polling the node.
+	 * **Warning:** Some value IDs share a command, so make sure not to blindly call this for every property
+	 */
+	// wotan-disable-next-line no-misused-generics
+	public pollValue<T extends unknown = unknown>(
+		valueId: ValueID,
+	): Promise<T | undefined> {
+		// Try to retrieve the corresponding CC API
+		const endpointInstance = this.getEndpoint(valueId.endpoint || 0);
+		if (!endpointInstance) {
+			throw new ZWaveError(
+				`Endpoint ${valueId.endpoint} does not exist on Node ${this.id}`,
+				ZWaveErrorCodes.Argument_Invalid,
+			);
+		}
+
+		const api = (endpointInstance.commandClasses as any)[
+			valueId.commandClass
+		] as CCAPI;
+
+		// Check if the pollValue method is implemented
+		if (!api.pollValue) {
+			throw new ZWaveError(
+				`The pollValue API is not implemented for CC ${getCCName(
+					valueId.commandClass,
+				)}!`,
+				ZWaveErrorCodes.CC_NoAPI,
+			);
+		}
+		// And call it
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+		return (api.pollValue as PollValueImplementation<T>)({
+			property: valueId.property,
+			propertyKey: valueId.propertyKey,
+		});
 	}
 
 	public get endpointCountIsDynamic(): boolean | undefined {
