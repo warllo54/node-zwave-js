@@ -178,7 +178,7 @@
 			]
 		},
 		"42": {
-			"label": "Humidity Threshold",
+			"label": "Humidity Change Threshold",
 			"description": "Humidity percent change threshold",
 			"unit": "%",
 			"valueSize": 1,
@@ -190,7 +190,7 @@
 			"allowManualEntry": true
 		},
 		"43": {
-			"label": "Luminance Threshold",
+			"label": "Luminance Change Threshold",
 			"description": "Luminance change threshold",
 			"valueSize": 2,
 			"minValue": 0,
@@ -201,7 +201,7 @@
 			"allowManualEntry": true
 		},
 		"44": {
-			"label": "Battery Threshold",
+			"label": "Battery Level Threshold",
 			"description": "Battery level threshold",
 			"valueSize": 1,
 			"minValue": 0,
@@ -212,7 +212,7 @@
 			"allowManualEntry": true
 		},
 		"45": {
-			"label": "Ultraviolet Threshold",
+			"label": "Ultraviolet Change Threshold",
 			"description": "Ultraviolet change threshold",
 			"valueSize": 1,
 			"minValue": 0,

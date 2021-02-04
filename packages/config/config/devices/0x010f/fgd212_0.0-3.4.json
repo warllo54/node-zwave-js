@@ -99,6 +99,7 @@
 			"label": "Dimming Step at Automatic Control",
 			"description": "Percentage of a dimming step at automatic control.",
 			"valueSize": 1,
+			"unit": "%",
 			"minValue": 1,
 			"maxValue": 99,
 			"defaultValue": 1,
@@ -580,7 +581,7 @@
 			]
 		},
 		"31": {
-			"label": "Load control mode recognized during auto-calibr.",
+			"label": "Load control mode recognized during auto-calibration",
 			"description": "Load control mode recognized during auto-calibration",
 			"valueSize": 1,
 			"minValue": 0,

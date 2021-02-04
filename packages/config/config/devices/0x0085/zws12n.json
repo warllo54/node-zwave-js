@@ -67,6 +67,7 @@
 			"label": "Close after time",
 			"description": "Close after time min",
 			"valueSize": 1,
+			"unit": "minutes",
 			"minValue": 0,
 			"maxValue": 120,
 			"defaultValue": 120,

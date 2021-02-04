@@ -107,8 +107,7 @@
 		},
 		"4": {
 			"label": "Temperature control hysteresis (DIFF I)",
-			"description": "Temperature control hysteresis (DIFF I), 1 equals 0.1 °C",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 1,
 			"minValue": 3,
 			"maxValue": 30,
@@ -119,8 +118,7 @@
 		},
 		"5": {
 			"label": "Floor minimum temperature limit (FLo)",
-			"description": "Floor minimum temperature limit (FLo), 1 equals 0.1 °C",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 2,
 			"minValue": 50,
 			"maxValue": 400,
@@ -132,7 +130,7 @@
 		"6": {
 			"label": "Floor maximum temperature (FHi)",
 			"description": "Floor maximum temperature (FHi), 1 equals 0.1 °C",
-			"unit": "°C",
+			"unit": ".1°C",
 			"valueSize": 2,
 			"minValue": 50,
 			"maxValue": 400,
@@ -143,8 +141,7 @@
 		},
 		"7": {
 			"label": "Air minimum temperature limit (ALo)",
-			"description": "Air minimum temperature limit (ALo), 1 equals 0.1 °C",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 2,
 			"minValue": 50,
 			"maxValue": 400,
@@ -155,8 +152,7 @@
 		},
 		"8": {
 			"label": "Air maximum temperature limit (AHi)",
-			"description": "Air maximum temperature limit (AHi), 1 equals 0.1 °C",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 2,
 			"minValue": 50,
 			"maxValue": 400,
@@ -178,7 +174,7 @@
 		},*/
 		"10": {
 			"label": "Room sensor calibration",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 1,
 			"minValue": -60,
 			"maxValue": 60,
@@ -189,7 +185,7 @@
 		},
 		"11": {
 			"label": "Floor sensor calibration",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 1,
 			"minValue": -60,
 			"maxValue": 60,
@@ -200,7 +196,7 @@
 		},
 		"12": {
 			"label": "External sensor calibration",
-			"unit": "°C/10",
+			"unit": ".1°C",
 			"valueSize": 1,
 			"minValue": -60,
 			"maxValue": 60,

@@ -270,7 +270,7 @@
 			]
 		},
 		"17": {
-			"label": "3-way switch",
+			"label": "3-way switch function",
 			"description": "3-way switch function",
 			"valueSize": 1,
 			"minValue": 0,

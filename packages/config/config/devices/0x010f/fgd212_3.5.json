@@ -81,6 +81,7 @@
 			"label": "Dimming Step at Automatic Control",
 			"description": "percentage of a dimming step at automatic control. 1-99",
 			"valueSize": 1,
+			"unit": "%",
 			"minValue": 1,
 			"maxValue": 99,
 			"defaultValue": 1,
