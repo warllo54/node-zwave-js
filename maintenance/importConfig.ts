@@ -1180,6 +1180,15 @@ async function parseZWAProduct(
 		?.value;
 	const reset = product?.Texts?.find((document) => document.Type === 5)
 		?.value;
+	let manual = zwafile?.Documents?.find((document) => document.Type === 1)
+		?.value;
+	const website_root =
+		"https://products.z-wavealliance.org/ProductManual/File?folder=&filename=";
+	if (manual) {
+		manual = manual.replace(/ /g, "%20");
+		manual = website_root.concat(manual);
+	}
+
 	const newConfig: Record<string, any> = {
 		manufacturer,
 		manufacturerId: manufacturerIdHex,
@@ -1194,11 +1203,12 @@ async function parseZWAProduct(
 		paramInformation: existingDevice?.paramInformation ?? {},
 		compat: existingDevice?.compat,
 	};
-	if (inclusion || exclusion || reset) {
+	if (inclusion || exclusion || reset || manual) {
 		newConfig.metadata = {
 			inclusion: inclusion,
 			exclusion: exclusion,
 			reset: reset,
+			manual: manual,
 		};
 	}
 
