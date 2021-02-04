@@ -299,8 +299,7 @@ function normalizeUnits(unit: string) {
 	} else if (/degrees/i.test(unit)) {
 		return "°";
 	}
-
-	return undefined;
+	return unit;
 }
 
 /**
@@ -1528,59 +1527,45 @@ async function maintenanceParse(): Promise<void> {
 
 		let includedZwaFiles = [];
 
-		for (const device of jsonData.devices) {
-			if (Array.isArray(device.zwaveAllianceId)) {
-				includedZwaFiles = includedZwaFiles.concat(
-					device.zwaveAllianceId,
-				);
-			} else if (device.zwaveAllianceId) {
-				includedZwaFiles.push(device.zwaveAllianceId);
+		try {
+			for (const device of jsonData.devices) {
+				if (Array.isArray(device.zwaveAllianceId)) {
+					includedZwaFiles = includedZwaFiles.concat(
+						device.zwaveAllianceId,
+					);
+				} else if (device.zwaveAllianceId) {
+					includedZwaFiles.push(device.zwaveAllianceId);
+				}
 			}
+		} catch (e) {
+			console.log("Error iterating: " + file + " - " + e);
 		}
 
-		for (const zwafile of zwaData) {
-			for (const referenceDevice of includedZwaFiles) {
-				const inclusion = zwafile?.Texts?.find(
-					(document) => document.Type === 1,
-				)?.value;
-				const exclusion = zwafile?.Texts?.find(
-					(document) => document.Type === 2,
-				)?.value;
-				const reset = zwafile?.Texts?.find(
-					(document) => document.Type === 5,
-				)?.value;
-				if (jsonData.metadata && zwafile.Texts) {
-					if (zwafile.Id === referenceDevice) {
-						if (jsonData.metadata.inclusion && inclusion) {
-							jsonData.metadata.inclusion = keepLongest(
-								jsonData.metadata.inclusion,
-								inclusion,
-							);
-							jsonData.metadata.inclusion = sanitizeString(
-								jsonData.metadata.inclusion,
-							);
-						}
-					}
-					if (zwafile.Id === referenceDevice) {
-						if (jsonData.metadata.exclusion && exclusion) {
-							jsonData.metadata.exclusion = keepLongest(
-								jsonData.metadata.exclusion,
-								exclusion,
-							);
-							jsonData.metadata.exclusion = sanitizeString(
-								jsonData.metadata.exclusion,
-							);
-						}
-					}
-					if (zwafile.Id === referenceDevice) {
-						if (jsonData.metadata.reset && reset) {
-							jsonData.metadata.reset = keepLongest(
-								jsonData.metadata.reset,
-								reset,
-							);
-							jsonData.metadata.reset = sanitizeString(
-								jsonData.metadata.reset,
-							);
+		includedZwaFiles.sort(function (a, b) {
+			return a - b;
+		});
+
+		for (const referenceDevice of includedZwaFiles) {
+			for (const zwafile of zwaData) {
+				if (zwafile.Id === referenceDevice) {
+					let manual = zwafile?.Documents?.find(
+						(document) => document.Type === 1,
+					)?.value;
+
+					const website_root =
+						"https://products.z-wavealliance.org/ProductManual/File?folder=&filename=";
+
+					if (manual) {
+						manual = manual.replace(/ /g, "%20");
+						manual = website_root.concat(manual);
+
+						if (jsonData.metadata) {
+							jsonData.metadata.manual = manual;
+							break;
+						} else {
+							jsonData.metadata = {};
+							jsonData.metadata.manual = manual;
+							break;
 						}
 					}
 				}
