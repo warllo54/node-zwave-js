@@ -30,7 +30,6 @@
 		},
 		"2": {
 			"label": "KWH Meter Report Period",
-			"description": "KWH Meter Report Period (6*10min=1 hour)",
 			"unit": "10 minutes",
 			"valueSize": 2,
 			"minValue": 1,
@@ -42,7 +41,6 @@
 		},
 		"3": {
 			"label": "Threshold of current for Load caution",
-			"description": "Threshold of current for Load caution (1100*0.01A = 11A)",
 			"unit": ".01A",
 			"valueSize": 2,
 			"minValue": 10,
