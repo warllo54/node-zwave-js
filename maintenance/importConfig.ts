@@ -1082,7 +1082,6 @@ async function parseZWAProduct(
 	manufacturerId: number,
 	manufacturer: string | undefined,
 ): Promise<void> {
-	const productFile = product;
 	const productLabel = product.Identifier;
 
 	// any products descriptions have productName in it, remove it
@@ -1092,7 +1091,6 @@ async function parseZWAProduct(
 
 	let manufacturerIdHex = product.ManufacturerId.replace(/^0x/, "");
 	manufacturerIdHex = formatId(manufacturerIdHex);
-	const commandClasses = product.ControlledCommandClasses;
 
 	/*************************************
 	 *	Load the device configurations   *
@@ -1180,7 +1178,7 @@ async function parseZWAProduct(
 		?.value;
 	const reset = product?.Texts?.find((document) => document.Type === 5)
 		?.value;
-	let manual = zwafile?.Documents?.find((document) => document.Type === 1)
+	let manual = product?.Documents?.find((document) => document.Type === 1)
 		?.value;
 	const website_root =
 		"https://products.z-wavealliance.org/ProductManual/File?folder=&filename=";
@@ -1212,163 +1210,112 @@ async function parseZWAProduct(
 		};
 	}
 
+	/***************************
+	 *     Clean up values     *
+	 ***************************/
+
+	newConfig.description = sanitizeString(newConfig.description);
+
 	/**********************
 	 *     Parameters     *
 	 **********************/
 	const parameters = product.ConfigurationParameters;
 
-	// Test if parameter values include bitsets
-	// TODO add bitset handling
-	let isBitSet = false;
-	for (const param of parameters) {
-		for (const value of param.ConfigurationParameterValues) {
-			if (value.To > 10000) {
-				isBitSet = true;
-			}
-		}
-	}
-	// Temporarily skip bitsets
-	if (isBitSet === true) return;
-
 	let requiresManualReview = false;
 	for (const param of parameters) {
-		// Bitset Paraemeters
-		if (isBitSet) {
-			// BitSets are split into multiple partial parameters
-			const bitSetIds = ensureArray(param.BitSet);
-			const defaultValue =
-				typeof param.value === "number" ? param.value : 0;
-			const valueSize = param.size || 1;
-
-			// Partial params share the first part of the label
-			param.label = ensureArray(param.label)[0];
-			const paramLabel = param.label ? `${param.label}. ` : "";
-
-			for (const bitSet of bitSetIds) {
-				// OZW has 1-based bit indizes, we are 0-based
-				const bit = (bitSet.id || 1) - 1;
-				const mask = 2 ** bit;
-				const id = `${param.index}[${num2hex(mask)}]`;
-
-				// Parse the label for this bit
-				const label = ensureArray(bitSet.Label)[0] ?? "";
-				const desc = ensureArray(bitSet.Help)[0] ?? "";
-
-				const parsedParam = newConfig.paramInformation[id] ?? {};
-
-				parsedParam.label = `${paramLabel}${label}`;
-				parsedParam.description = desc;
-				parsedParam.valueSize = valueSize; // The partial param must have the same value size as the original param
-				// OZW only supports single-bit "partial" params, so we only have 0 and 1 as possible values
-				parsedParam.minValue = 0;
-				parsedParam.maxValue = 1;
-				parsedParam.defaultValue = !!(defaultValue & mask) ? 1 : 0;
-				parsedParam.readOnly = false;
-				parsedParam.writeOnly = false;
-				parsedParam.allowManualEntry = true;
-
-				newConfig.paramInformation[id] = parsedParam;
-			}
-		}
-		// Non-bitset Parameters
-		else {
-			const parsedParam =
-				newConfig.paramInformation[param.ParameterNumber] ?? {};
-			// By default, update existing properties with new descriptions
-			parsedParam.label = param.Name || parsedParam.label;
-			parsedParam.description =
-				param.ConfigurationParameterValues.length > 1 // Sometimes values options are described and not presented as options
-					? param.Description
-					: param.ConfigurationParameterValues[0].Description;
-			parsedParam.valueSize = updateNumberOrDefault(
-				param.Size,
-				parsedParam.valueSize,
-				1,
+		const parsedParam =
+			newConfig.paramInformation[param.ParameterNumber] ?? {};
+		// By default, update existing properties with new descriptions
+		parsedParam.label = param.Name || parsedParam.label;
+		parsedParam.label = normalizeLabel(parsedParam.label);
+		parsedParam.description =
+			param.ConfigurationParameterValues.length > 1 // Sometimes values options are described and not presented as options
+				? param.Description
+				: param.ConfigurationParameterValues[0].Description;
+		parsedParam.description = normalizeDescription(parsedParam.description);
+		parsedParam.valueSize = updateNumberOrDefault(
+			param.Size,
+			parsedParam.valueSize,
+			1,
+		);
+		parsedParam.minValue = updateNumberOrDefault(
+			param.minValue,
+			parsedParam.min,
+			0,
+		);
+		try {
+			const priorMax = parsedParam.maxValue;
+			parsedParam.maxValue = updateNumberOrDefault(
+				param.maxValue,
+				parsedParam.max,
+				getIntegerLimits(parsedParam.valueSize, false).max, // choose the biggest possible number if no max is given
 			);
-			parsedParam.minValue = updateNumberOrDefault(
-				param.minValue,
-				parsedParam.min,
-				0,
-			);
-			try {
-				const priorMax = parsedParam.maxValue;
-				parsedParam.maxValue = updateNumberOrDefault(
-					param.maxValue,
-					parsedParam.max,
-					getIntegerLimits(parsedParam.valueSize, false).max, // choose the biggest possible number if no max is given
-				);
-				parsedParam.maxValue =
-					parsedParam.maxValue >= priorMax
-						? parsedParam.maxValue
-						: priorMax;
-			} catch {
-				// some config params have absurd value sizes, ignore them
-				parsedParam.maxValue = parsedParam.minValue;
-			}
-			parsedParam.readOnly = param.flagReadOnly;
-			parsedParam.writeOnly = param.Description.includes("write") // zWave Alliance typically puts (write only) in the description
-				? true
-				: false;
-			parsedParam.allowManualEntry =
-				param.ConfigurationParameterValues.length === 1 ? true : false;
-			parsedParam.defaultValue = updateNumberOrDefault(
-				param.DefaultValue,
-				parsedParam.value,
-				parsedParam.minValue, // choose the smallest possible number if no default is given
-			);
-
-			// Sanity check some values
-			parsedParam.minValue =
-				parsedParam.minValue <= parsedParam.defaultValue
-					? parsedParam.minValue
-					: parsedParam.defaultValue;
 			parsedParam.maxValue =
-				parsedParam.maxValue >= parsedParam.defaultValue
+				parsedParam.maxValue >= priorMax
 					? parsedParam.maxValue
-					: parsedParam.defaultValue;
-			parsedParam.writeOnly =
-				parsedParam.readOnly === false ? parsedParam.writeOnly : true;
+					: priorMax;
+		} catch {
+			// some config params have absurd value sizes, ignore them
+			parsedParam.maxValue = parsedParam.minValue;
+		}
+		parsedParam.readOnly = param.flagReadOnly;
+		parsedParam.writeOnly = param.Description.includes("write") // zWave Alliance typically puts (write only) in the description
+			? true
+			: false;
+		parsedParam.allowManualEntry =
+			param.ConfigurationParameterValues.length === 1 ? true : false;
+		parsedParam.defaultValue = updateNumberOrDefault(
+			param.DefaultValue,
+			parsedParam.value,
+			parsedParam.minValue, // choose the smallest possible number if no default is given
+		);
 
-			// Setup unsigned
-			if (parsedParam.minValue >= 0) {
-				parsedParam.unsigned = true;
-			} else {
-				delete parsedParam.unsigned;
-			}
+		// Sanity check some values
+		parsedParam.minValue =
+			parsedParam.minValue <= parsedParam.defaultValue
+				? parsedParam.minValue
+				: parsedParam.defaultValue;
+		parsedParam.maxValue =
+			parsedParam.maxValue >= parsedParam.defaultValue
+				? parsedParam.maxValue
+				: parsedParam.defaultValue;
+		parsedParam.writeOnly =
+			parsedParam.readOnly === false ? parsedParam.writeOnly : true;
 
-			// could have multiple translations, if so it's an array, the first is the english one
-			if (isArray(parsedParam.description)) {
-				parsedParam.description = parsedParam.description[0];
-			}
+		// Setup unsigned
+		if (parsedParam.minValue >= 0) {
+			parsedParam.unsigned = true;
+		} else {
+			delete parsedParam.unsigned;
+		}
 
-			if (typeof parsedParam.description !== "string") {
-				parsedParam.description = "";
-			}
+		if (typeof parsedParam.description !== "string") {
+			parsedParam.description = "";
+		}
 
-			// Parse options list if manual entry is disallowed (i.e. options picker)
-			if (parsedParam.allowManualEntry === false) {
-				parsedParam.options = [];
-				for (const item of param.ConfigurationParameterValues) {
-					// Values are given as options
-					if (item.From === item.To) {
-						const opt = {
-							label: item.Description,
-							value: item.To,
-						};
-						parsedParam.options.push(opt);
-					} else {
-						// Sometimes options appear to be a list but present multiple values; these will require manual correction
-						const opt = {
-							label: item.Description,
-							value: item.To,
-						};
-						parsedParam.options.push(opt);
-						requiresManualReview = true;
-					}
+		// Parse options list if manual entry is disallowed (i.e. options picker)
+		if (parsedParam.allowManualEntry === false) {
+			parsedParam.options = [];
+			for (const item of param.ConfigurationParameterValues) {
+				// Values are given as options
+				if (item.From === item.To) {
+					const opt = {
+						label: normalizeDescription(item.Description),
+						value: item.To,
+					};
+					parsedParam.options.push(opt);
+				} else {
+					// Sometimes options appear to be a list but present multiple values; these will require manual correction
+					const opt = {
+						label: normalizeDescription(item.Description),
+						value: item.To,
+					};
+					parsedParam.options.push(opt);
+					requiresManualReview = true;
 				}
 			}
-			newConfig.paramInformation[param.ParameterNumber] = parsedParam;
 		}
+		newConfig.paramInformation[param.ParameterNumber] = parsedParam;
 	}
 
 	/********************************
@@ -1455,10 +1402,7 @@ async function parseZWAProduct(
 	}
 
 	// TEMP -- skip no param files
-	if (
-		Object.keys(newConfig.paramInformation).length === 0 ||
-		Object.keys(newConfig.associations).length === 0
-	) {
+	if (Object.keys(newConfig.paramInformation).length === 0) {
 		return;
 	}
 
@@ -1936,7 +1880,59 @@ function normalizeIdentifier(originalIdentifier: string) {
 	newIdentifier = newIdentifier.toLocaleUpperCase();
 	return [newIdentifier, originalIdentifier];
 }
+/****************************************************************************
+ *                   Normalize label function                               *
+ * Capitilze each word in a label        							        *
+ * 																			*
+ ****************************************************************************/
+function normalizeLabel(originalString: string) {
+	originalString = sanitizeString(originalString);
+	originalString = originalString.replace(/\n/g, " ");
+	originalString = originalString.replace(/\"/g, "");
+	const splitStr = originalString.toLowerCase().split(" ");
+	for (let i = 0; i < splitStr.length; i++) {
+		splitStr[i] =
+			splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);
+	}
+	originalString = splitStr.join(" ");
+	originalString = originalString.replace(/Led/g, "LED");
+	originalString = originalString.replace(/z-wave/g, "Z-Wave");
+	originalString = originalString.replace(/basic set/g, "Basic Set");
+	originalString = originalString.replace(
+		/multi-level switch/g,
+		"Multi-Level Switch",
+	);
+	originalString = originalString.replace(/multi-level/g, "Multi-Level");
+	originalString = originalString.replace(/ Of /g, " of ");
+	originalString = originalString.replace(/ To /g, " to ");
+	originalString = originalString.replace(/ A /g, " a ");
+	originalString = originalString.replace(/ An /g, " an ");
+	originalString = originalString.replace(/ Is /g, " is ");
+	return originalString;
+}
 
+/****************************************************************************
+ *                   Normalize descriptionion                               *
+ * Capitilze each word in a description        							        *
+ * 																			*
+ ****************************************************************************/
+function normalizeDescription(originalString: string) {
+	originalString = sanitizeString(originalString);
+	originalString = originalString.replace(/\n/g, " ");
+	originalString = originalString.replace(/\"/g, "");
+	originalString = originalString.toLocaleLowerCase();
+	originalString =
+		originalString.charAt(0).toUpperCase() + originalString.slice(1);
+	originalString = originalString.replace(/Led/g, "LED");
+	originalString = originalString.replace(/z-wave/g, "Z-Wave");
+	originalString = originalString.replace(/basic set/g, "Basic Set");
+	originalString = originalString.replace(
+		/multi-level switch/g,
+		"Multi-Level Switch",
+	);
+	originalString = originalString.replace(/multi-level/g, "Multi-Level");
+	return originalString;
+}
 /****************************************************************************
  *                   Sanitize String function                             *
  * Strips out common mistakes in strings							        *
@@ -1955,6 +1951,7 @@ function sanitizeString(originalString: string) {
 	originalString = originalString.replace(/   /g, " ");
 	originalString = originalString.replace(/  /g, " ");
 	originalString = originalString.replace(/\,s*$/g, "");
+	originalString = originalString.replace(/\„s*$/g, "");
 	originalString = originalString.replace(/\.s*$/g, "");
 	originalString = originalString.replace(/\:s*$/g, "");
 	originalString = originalString.trim();
